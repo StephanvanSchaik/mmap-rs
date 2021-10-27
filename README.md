@@ -1,5 +1,8 @@
 # mmap-rs
 
+[![Crates.io](https://img.shields.io/crates/v/mmap-rs.svg)](https://crates.io/crates/mmap-rs)
+[![Docs](https://docs.rs/mmap-rs/badge.svg)](https://docs.rs/mmap-rs)
+
 A cross-platform and safe Rust API to create and manage memory mappings in the virtual address
 space of the calling process. This crate can be used to create both file mappings and anonymous
 mappings. In addition, this crate supports the use of features such as huge pages, locking
