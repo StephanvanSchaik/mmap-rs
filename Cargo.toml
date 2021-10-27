@@ -2,6 +2,11 @@
 name = "mmap-rs"
 version = "0.1.0"
 edition = "2018"
+author = "Stephan van Schaik"
+license = "MIT"
+description = "A cross-platform and safe Rust API to create and manage memory mappings in the virtual address space of the calling process."
+homepage = "https://codentium.com"
+repository = "https://github.com/StephanvanSchaik/mmap-rs"
 
 [target.'cfg(windows)'.build-dependencies]
 windows = "0.21"
