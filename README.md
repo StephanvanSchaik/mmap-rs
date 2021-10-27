@@ -17,7 +17,7 @@ physical memory, etc. on platforms where those features are available.
 - [x] Read-only memory maps.
 - [x] Read-write memory maps.
 - [x] Executable memory maps.
-- [x] RWX mmemory maps for JIT purposes (`unsafe` - see documentation for details).
+- [x] RWX memory maps for JIT purposes (`unsafe` - see documentation for details).
 - [x] Portable instruction cache flushing.
 - [x] Synchronous and asynchronous flushing.
 - [x] Support for locking physical memory.
