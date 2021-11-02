@@ -152,6 +152,8 @@ macro_rules! mmap_impl {
             }
 
             /// Remaps this memory mapping as inaccessible.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
             pub fn make_none(self) -> Result<MmapNone, (Self, Error)> {
                 if let Err(e) = self.inner.make_none() {
                     return Err((self, e));
@@ -163,6 +165,8 @@ macro_rules! mmap_impl {
             }
 
             /// Remaps this memory mapping as immutable.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
             pub fn make_read_only(self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_read_only() {
                     return Err((self, e));
@@ -174,6 +178,8 @@ macro_rules! mmap_impl {
             }
 
             /// Remaps this memory mapping as executable.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
             pub fn make_exec(self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec() {
                     return Err((self, e));
@@ -196,6 +202,8 @@ macro_rules! mmap_impl {
             /// modified the pages, then executing the code may result in undefined behavior. To ensure
             /// correct behavior a user has to flush the instruction cache after modifying and before
             /// executing the page.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
             pub unsafe fn make_exec_no_flush(self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec() {
                     return Err((self, e));
