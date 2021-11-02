@@ -152,8 +152,10 @@ macro_rules! mmap_impl {
             }
 
             /// Remaps this memory mapping as inaccessible.
-            pub fn make_none(self) -> Result<MmapNone, Error> {
-                self.inner.make_none()?;
+            pub fn make_none(self) -> Result<MmapNone, (Self, Error)> {
+                if let Err(e) = self.inner.make_none() {
+                    return Err((self, e));
+                }
 
                 Ok(MmapNone {
                     inner: self.inner,
@@ -161,8 +163,10 @@ macro_rules! mmap_impl {
             }
 
             /// Remaps this memory mapping as immutable.
-            pub fn make_read_only(self) -> Result<Mmap, Error> {
-                self.inner.make_read_only()?;
+            pub fn make_read_only(self) -> Result<Mmap, (Self, Error)> {
+                if let Err(e) = self.inner.make_read_only() {
+                    return Err((self, e));
+                }
 
                 Ok(Mmap {
                     inner: self.inner,
@@ -170,9 +174,14 @@ macro_rules! mmap_impl {
             }
 
             /// Remaps this memory mapping as executable.
-            pub fn make_exec(self) -> Result<Mmap, Error> {
-                self.inner.make_exec()?;
-                self.inner.flush_icache()?;
+            pub fn make_exec(self) -> Result<Mmap, (Self, Error)> {
+                if let Err(e) = self.inner.make_exec() {
+                    return Err((self, e));
+                }
+
+                if let Err(e) = self.inner.flush_icache() {
+                    return Err((self, e));
+                }
 
                 Ok(Mmap {
                     inner: self.inner,
@@ -187,8 +196,10 @@ macro_rules! mmap_impl {
             /// modified the pages, then executing the code may result in undefined behavior. To ensure
             /// correct behavior a user has to flush the instruction cache after modifying and before
             /// executing the page.
-            pub unsafe fn make_exec_no_flush(self) -> Result<Mmap, Error> {
-                self.inner.make_exec()?;
+            pub unsafe fn make_exec_no_flush(self) -> Result<Mmap, (Self, Error)> {
+                if let Err(e) = self.inner.make_exec() {
+                    return Err((self, e));
+                }
 
                 Ok(Mmap {
                     inner: self.inner,
