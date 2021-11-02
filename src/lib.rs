@@ -147,7 +147,7 @@ macro_rules! mmap_impl {
             /// modified the pages, then executing the code may result in undefined behavior. To ensure
             /// correct behavior a user has to flush the instruction cache after modifying and before
             /// executing the page.
-            pub fn flush_icache(self) -> Result<(), Error> {
+            pub fn flush_icache(&self) -> Result<(), Error> {
                 self.inner.flush_icache()
             }
 
