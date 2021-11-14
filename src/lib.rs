@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 pub mod error;
 mod os_impl;
@@ -76,23 +77,39 @@ bitflags! {
 }
 
 /// The preferred size of the pages uses, where the size is in log2 notation.
+///
+/// Note that not all the offered page sizes may be available on the current platform.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct PageSize(pub usize);
 
 impl PageSize {
+    /// Map the mapping using 4 KiB pages.
     pub const _4K:   Self = Self(12);
+    /// Map the mapping using 64 KiB pages.
     pub const _64K:  Self = Self(16);
+    /// Map the mapping using 512 KiB pages.
     pub const _512K: Self = Self(19);
+    /// Map the mapping using 1 MiB pages.
     pub const _1M:   Self = Self(20);
+    /// Map the mapping using 2 MiB pages.
     pub const _2M:   Self = Self(21);
+    /// Map the mapping using 4 MiB pages.
     pub const _4M:   Self = Self(22);
+    /// Map the mapping using 8 MiB pages.
     pub const _8M:   Self = Self(23);
+    /// Map the mapping using 16 MiB pages.
     pub const _16M:  Self = Self(24);
+    /// Map the mapping using 32 MiB pages.
     pub const _32M:  Self = Self(25);
+    /// Map the mapping using 256 MiB pages.
     pub const _256M: Self = Self(28);
+    /// Map the mapping using 512 MiB pages.
     pub const _512M: Self = Self(29);
+    /// Map the mapping using 1 GiB pages.
     pub const _1G:   Self = Self(30);
+    /// Map the mapping using 2 GiB pages.
     pub const _2G:   Self = Self(31);
+    /// Map the mapping using 16 GiB pages.
     pub const _16G:  Self = Self(34);
 }
 
