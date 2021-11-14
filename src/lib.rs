@@ -296,6 +296,16 @@ pub struct Mmap {
 
 mmap_impl!(Mmap);
 
+impl Mmap {
+    /// Extracts a slice containing the entire mapping.
+    ///
+    /// This is equivalent to `&mapping[..]`.
+    #[inline]
+    pub fn as_slice(&self) -> &[u8] {
+        &self[..]
+    }
+}
+
 impl Deref for Mmap {
     type Target = [u8];
 
@@ -322,6 +332,22 @@ pub struct MmapMut {
 mmap_impl!(MmapMut);
 
 impl MmapMut {
+    /// Extracts a slice containing the entire mapping.
+    ///
+    /// This is equivalent to `&mapping[..]`.
+    #[inline]
+    pub fn as_slice(&self) -> &[u8] {
+        &self[..]
+    }
+
+    /// Extracts a mutable slice containing the entire mapping.
+    ///
+    /// This is equivalent to `&mut mapping[..]`.
+    #[inline]
+    pub fn as_mut_slice(&mut self) -> &mut [u8] {
+        &mut self[..]
+    }
+
     /// Yields a raw mutable pointer to this mapping.
     #[inline]
     pub fn as_mut_ptr(&mut self) -> *mut u8 {
