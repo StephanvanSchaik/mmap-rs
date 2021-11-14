@@ -401,20 +401,24 @@ impl MmapOptions {
     /// access, then [`Mmap::make_mut()`] will not work. Furthermore, [`std::fs::OpenOptions`] does
     /// not in itself provide a standardized way to open the file with executable access. However,
     /// if the file is not opened with executable access, then it may not be possible to use
-    /// [`Mmap::make_exec()`]. Fortunately, Rust provides [`std::os::windows::fs::OpenOptionsExt`]
-    /// that allows you to open the file with executable access rights. See
-    /// [`std::os::windows::fs::OpenOptionsExt::access_mode`] for more information.
+    /// [`Mmap::make_exec()`]. Fortunately, Rust provides [`OpenOptionsExt`] that allows you to
+    /// open the file with executable access rights. See [`access_mode`] for more information.
     ///
     /// This function is marked as **unsafe** as the user should be aware that even in the case
     /// that a file is mapped as immutable in the address space of the current process, it does not
     /// guarantee that there does not exist any other mutable mapping to the file.
     ///
     /// On Microsoft Windows, it is possible to limit the access to shared reading or to be fully
-    /// exclusive using [`std::os::windows::fs::OpenOptionsExt::share_mode`].
+    /// exclusive using [`share_mode`].
     ///
     /// On most Unix systems, it is possible to use [`nix::fcntl::flock`]. However, keep in mind
     /// that this provides an **advisory** locking scheme, and that implementations are therefore
     /// required to be co-operative.
+    ///
+    /// [`OpenOptionsExt`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html
+    /// [`access_mode`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html#tymethod.access_mode
+    /// [`share_mode`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html#tymethod.share_mode
+    /// [`nix::fcntl::flock`]: https://docs.rs/nix/latest/nix/fcntl/fn.flock.html
     pub unsafe fn with_file(self, file: File, offset: u64) -> Self {
         Self {
             inner: self.inner.with_file(file, offset),
