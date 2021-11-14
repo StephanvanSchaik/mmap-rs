@@ -186,13 +186,13 @@ impl MmapOptions {
         (size, size)
     }
 
-    pub fn with_address(mut self, address: Option<usize>) -> Self {
-        self.address = address;
+    pub fn with_address(mut self, address: usize) -> Self {
+        self.address = Some(address);
         self
     }
 
-    pub fn with_file(mut self, file: Option<(File, u64)>) -> Self {
-        self.file = file;
+    pub fn with_file(mut self, file: File, offset: u64) -> Self {
+        self.file = Some((file, offset));
         self
     }
 
@@ -206,8 +206,8 @@ impl MmapOptions {
         self
     }
 
-    pub fn with_page_size(mut self, page_size: Option<PageSize>) -> Self {
-        self.page_size = page_size;
+    pub fn with_page_size(mut self, page_size: PageSize) -> Self {
+        self.page_size = Some(page_size);
         self
     }
 

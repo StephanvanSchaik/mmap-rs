@@ -369,7 +369,7 @@ impl MmapOptions {
     }
 
     /// The desired address at which the memory should be mapped.
-    pub fn with_address(self, address: Option<usize>) -> Self {
+    pub fn with_address(self, address: usize) -> Self {
         Self {
             inner: self.inner.with_address(address),
         }
@@ -398,9 +398,9 @@ impl MmapOptions {
     /// On most Unix systems, it is possible to use [`nix::fcntl::flock`]. However, keep in mind
     /// that this provides an **advisory** locking scheme, and that implementations are therefore
     /// required to be co-operative.
-    pub unsafe fn with_file(self, file: Option<(File, u64)>) -> Self {
+    pub unsafe fn with_file(self, file: File, offset: u64) -> Self {
         Self {
-            inner: self.inner.with_file(file),
+            inner: self.inner.with_file(file, offset),
         }
     }
 
@@ -422,7 +422,7 @@ impl MmapOptions {
     }
 
     /// Whether this memory mapped should be backed by a specific page size or not.
-    pub fn with_page_size(self, page_size: Option<PageSize>) -> Self {
+    pub fn with_page_size(self, page_size: PageSize) -> Self {
         Self {
             inner: self.inner.with_page_size(page_size),
         }
