@@ -352,10 +352,11 @@ pub struct MmapOptions {
 }
 
 impl MmapOptions {
-    /// Construct the `MmapOptions` builder.
-    pub fn new() -> Self {
+    /// Constructs the `MmapOptions` builder. The size specified is the size of the mapping to be
+    /// allocated in bytes.
+    pub fn new(size: usize) -> Self {
         Self {
-            inner: platform::MmapOptions::new(),
+            inner: platform::MmapOptions::new(size),
         }
     }
 
@@ -400,13 +401,6 @@ impl MmapOptions {
     pub unsafe fn with_file(self, file: Option<(File, u64)>) -> Self {
         Self {
             inner: self.inner.with_file(file),
-        }
-    }
-
-    /// The size of the mapping to be allocated.
-    pub fn with_size(self, size: usize) -> Self {
-        Self {
-            inner: self.inner.with_size(size),
         }
     }
 

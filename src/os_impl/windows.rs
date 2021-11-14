@@ -213,11 +213,11 @@ pub struct MmapOptions {
 }
 
 impl MmapOptions {
-    pub fn new() -> Self {
+    pub fn new(size: usize) -> Self {
         Self {
             address: None,
             file: None,
-            size: 0,
+            size,
             flags: MmapFlags::empty(),
             unsafe_flags: UnsafeMmapFlags::empty(),
             page_size: None,
@@ -241,11 +241,6 @@ impl MmapOptions {
 
     pub fn with_file(mut self, file: Option<(File, u64)>) -> Self {
         self.file = file;
-        self
-    }
-
-    pub fn with_size(mut self, size: usize) -> Self {
-        self.size = size;
         self
     }
 
