@@ -415,6 +415,9 @@ impl MmapOptions {
     /// that this provides an **advisory** locking scheme, and that implementations are therefore
     /// required to be co-operative.
     ///
+    /// On Linux, it is also possible to mark the file as immutable. See `man 2 ioctl_iflags` and
+    /// `man 1 chattr` for more information.
+    ///
     /// [`OpenOptionsExt`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html
     /// [`access_mode`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html#tymethod.access_mode
     /// [`share_mode`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html#tymethod.share_mode
