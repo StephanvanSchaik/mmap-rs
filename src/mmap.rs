@@ -1,8 +1,13 @@
 use bitflags::bitflags;
 use crate::error::Error;
-use crate::platform;
 use std::fs::File;
 use std::ops::{Deref, DerefMut, Range};
+
+#[cfg(unix)]
+use crate::os_impl::unix as platform;
+
+#[cfg(windows)]
+use crate::os_impl::windows as platform;
 
 bitflags! {
     /// The available flags to configure the allocated mapping.

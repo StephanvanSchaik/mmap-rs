@@ -14,6 +14,10 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    /// Represents [`std::num::ParseIntError`].
+    #[error(transparent)]
+    ParseInt(#[from] std::num::ParseIntError),
+
     #[cfg(unix)]
     /// Represents [`nix::Error`].
     #[error(transparent)]

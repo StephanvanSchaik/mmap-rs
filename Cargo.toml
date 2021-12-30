@@ -13,6 +13,7 @@ windows = "0.21"
 
 [dependencies]
 bitflags = "1"
+combine = "4"
 thiserror = "1"
 
 [target.'cfg(unix)'.dependencies]
