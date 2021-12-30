@@ -9,4 +9,5 @@ mod os_impl;
 #[cfg(target_os = "linux")]
 pub use areas::*;
 
+pub use error::Error;
 pub use mmap::*;
