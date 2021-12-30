@@ -1,16 +1,18 @@
 use bitflags::bitflags;
-use crate::{MmapFlags, PageSize, UnsafeMmapFlags};
+use crate::areas::{MemoryArea, ProtectionFlags};
+use crate::mmap::{MmapFlags, PageSize, UnsafeMmapFlags};
 use crate::error::Error;
 use std::fs::File;
 use std::ops::Range;
 use std::os::windows::io::AsRawHandle;
-use windows::Win32::Foundation::{CloseHandle, HANDLE, PWSTR};
+use std::path::PathBuf;
+use windows::Win32::Foundation::{CloseHandle, HANDLE, MAX_PATH, PWSTR};
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
 use windows::Win32::System::Diagnostics::Debug::FlushInstructionCache;
 use windows::Win32::System::Memory::*;
+use windows::Win32::System::ProcessStatus::K32GetMappedFileNameW;
 use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
-#[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-use windows::Win32::System::Threading::GetCurrentProcess;
+use windows::Win32::System::Threading::{PROCESS_ALL_ACCESS, GetCurrentProcess, OpenProcess};
 
 bitflags! {
     struct Flags: u32 {
@@ -447,5 +449,118 @@ impl MmapOptions {
         };
 
         self.do_map(protect)
+    }
+}
+
+use std::io::{BufRead, BufReader};
+use std::marker::PhantomData;
+
+pub struct MemoryMaps<B> {
+    handle: HANDLE,
+    address: usize,
+    marker: PhantomData<B>,
+}
+
+impl MemoryMaps<BufReader<File>> {
+    pub fn open(pid: Option<u32>) -> Result<Self, Error> {
+        let handle = match pid {
+            Some(id) => unsafe { OpenProcess(
+                PROCESS_ALL_ACCESS,
+                false,
+                id,
+            ) },
+            _ => unsafe { GetCurrentProcess() },
+        };
+
+        Ok(Self {
+            handle,
+            address: 0,
+            marker: PhantomData,
+        })
+    }
+}
+
+impl<B: BufRead> Iterator for MemoryMaps<B> {
+    type Item = Result<MemoryArea, Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut info = MEMORY_BASIC_INFORMATION::default();
+        
+        loop {
+            let address = self.address;
+
+            let size = unsafe {
+                VirtualQueryEx(
+                    self.handle,
+                    address as _,
+                    &mut info,
+                    std::mem::size_of::<MEMORY_BASIC_INFORMATION>(),
+                )
+            };
+
+            if size < std::mem::size_of::<MEMORY_BASIC_INFORMATION>() {
+                return None;
+            }
+
+            let size = info.RegionSize as usize;
+            let start = info.AllocationBase as usize;
+            let end = start + size;
+            let range = start..end;
+
+            self.address += size;
+
+            if info.State & (MEM_COMMIT | MEM_PRIVATE | MEM_MAPPED | MEM_IMAGE) == 0 {
+                continue;
+            }
+
+            let protection = match info.Protect {
+                PAGE_EXECUTE =>
+                    ProtectionFlags::EXECUTE,
+                PAGE_EXECUTE_READ =>
+                    ProtectionFlags::READ | ProtectionFlags::EXECUTE,
+                PAGE_EXECUTE_READWRITE =>
+                    ProtectionFlags::READ | ProtectionFlags::WRITE | ProtectionFlags::EXECUTE,
+                PAGE_EXECUTE_WRITECOPY =>
+                    ProtectionFlags::READ | ProtectionFlags::WRITE | ProtectionFlags::EXECUTE |
+                    ProtectionFlags::COPY_ON_WRITE,
+                PAGE_READONLY =>
+                    ProtectionFlags::READ,
+                PAGE_READWRITE =>
+                    ProtectionFlags::READ | ProtectionFlags::WRITE,
+                PAGE_WRITECOPY =>
+                    ProtectionFlags::READ | ProtectionFlags::WRITE | ProtectionFlags::COPY_ON_WRITE,
+                _ =>
+                    ProtectionFlags::empty(),
+            };
+
+            let mut name = vec![0u16; MAX_PATH as usize];
+
+            let name_size = unsafe {
+                K32GetMappedFileNameW(
+                    self.handle,
+                    address as *const std::ffi::c_void,
+                    PWSTR(name.as_mut_ptr()),
+                    name.len() as u32,
+                )
+            };
+
+            let path = if name_size != 0 {
+                let path = widestring::U16CStr::from_slice_with_nul(&name).unwrap();
+                let path = path.to_string_lossy();
+                Some((PathBuf::from(path), 0))
+            } else {
+                None
+            };
+
+            self.address += size;
+
+            return Some(Ok(MemoryArea {
+                range,
+                protection,
+                path,
+            }));
+        }
+
+        None
     }
 }

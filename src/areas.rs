@@ -8,6 +8,9 @@ use std::path::PathBuf;
 #[cfg(target_os = "linux")]
 use crate::os_impl::linux as platform;
 
+#[cfg(target_os = "windows")]
+use crate::os_impl::windows as platform;
+
 bitflags! {
     /// The protection flags of the memory area.
     pub struct ProtectionFlags: u32 {
