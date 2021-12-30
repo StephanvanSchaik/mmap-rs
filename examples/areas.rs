@@ -29,7 +29,7 @@ fn main() -> Result<(), Error> {
             } else {
                 "p"
             },
-            area.path.map(|(path, _)| format!(" {}", path.display())).unwrap_or(String::new()),
+            area.path.map(|(path, offset)| format!(" {:x} {}", offset, path.display())).unwrap_or(String::new()),
         );
     }
 
