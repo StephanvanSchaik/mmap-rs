@@ -503,7 +503,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
             }
 
             let size = info.RegionSize as usize;
-            let start = info.AllocationBase as usize;
+            let start = info.BaseAddress as usize;
             let end = start + size;
             let range = start..end;
 
@@ -547,7 +547,10 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
             let path = if name_size != 0 {
                 let path = widestring::U16CStr::from_slice_with_nul(&name).unwrap();
                 let path = path.to_string_lossy();
-                Some((PathBuf::from(path), 0))
+
+                let offset = (info.BaseAddress as u64) - (info.AllocationBase as u64);
+
+                Some((PathBuf::from(path), offset))
             } else {
                 None
             };
