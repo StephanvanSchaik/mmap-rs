@@ -552,8 +552,6 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 None
             };
 
-            self.address += size;
-
             return Some(Ok(MemoryArea {
                 range,
                 protection,
