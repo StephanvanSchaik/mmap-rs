@@ -1,19 +1,16 @@
-windows::include_bindings!();
-
 use bitflags::bitflags;
 use crate::{MmapFlags, PageSize, UnsafeMmapFlags};
 use crate::error::Error;
 use std::fs::File;
 use std::ops::Range;
 use std::os::windows::io::AsRawHandle;
-use windows::Handle;
-use Windows::Win32::Foundation::{CloseHandle, HANDLE, PWSTR};
+use windows::Win32::Foundation::{CloseHandle, HANDLE, PWSTR};
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-use Windows::Win32::System::Diagnostics::Debug::FlushInstructionCache;    
-use Windows::Win32::System::Memory::*;
-use Windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
+use windows::Win32::System::Diagnostics::Debug::FlushInstructionCache;
+use windows::Win32::System::Memory::*;
+use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-use Windows::Win32::System::Threading::GetCurrentProcess;
+use windows::Win32::System::Threading::GetCurrentProcess;
 
 bitflags! {
     struct Flags: u32 {
