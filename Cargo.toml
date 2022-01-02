@@ -8,9 +8,6 @@ description = "A cross-platform and safe Rust API to create and manage memory ma
 homepage = "https://codentium.com"
 repository = "https://github.com/StephanvanSchaik/mmap-rs"
 
-[target.'cfg(windows)'.build-dependencies]
-windows = "0.21"
-
 [dependencies]
 bitflags = "1"
 combine = "4"
