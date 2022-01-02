@@ -11,6 +11,7 @@ repository = "https://github.com/StephanvanSchaik/mmap-rs"
 [dependencies]
 bitflags = "1"
 combine = "4"
+libc = "0.2"
 thiserror = "1"
 
 [target.'cfg(unix)'.dependencies]
@@ -32,3 +33,6 @@ features = [
     "Win32_System_SystemInformation",
     "Win32_System_Threading",
 ]
+
+[target.'cfg(target_os = "macos")'.dependencies]
+mach2 = "0.4"

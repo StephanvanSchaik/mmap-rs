@@ -11,6 +11,9 @@ use crate::os_impl::freebsd as platform;
 #[cfg(target_os = "linux")]
 use crate::os_impl::linux as platform;
 
+#[cfg(target_os = "macos")]
+use crate::os_impl::macos as platform;
+
 #[cfg(target_os = "windows")]
 use crate::os_impl::windows as platform;
 
