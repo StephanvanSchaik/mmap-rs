@@ -290,7 +290,7 @@ impl MmapOptions {
         }
 
         #[cfg(any(target_os = "ios", target_os = "macos"))]
-        if self.unsafe_flags.contains(UnsafeMmapFlags::MAP_JIT) {
+        if self.unsafe_flags.contains(UnsafeMmapFlags::JIT) {
             flags |= MapFlags::MAP_JIT;
         }
 
