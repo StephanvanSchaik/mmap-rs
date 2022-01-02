@@ -18,6 +18,10 @@ pub enum Error {
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
 
+    /// Represents [`std::str::Utf8Error`].
+    #[error(transparent)]
+    Utf8(std::str::Utf8Error),
+
     #[cfg(unix)]
     /// Represents [`nix::Error`].
     #[error(transparent)]

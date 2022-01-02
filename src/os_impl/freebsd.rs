@@ -35,7 +35,7 @@ pub struct MemoryMaps<B> {
 
 impl MemoryMaps<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
-        let mut ctl = sysctl::Ctl::new("kern.proc.vmmap").unwrap();
+        let mut ctl = sysctl::Ctl::new("kern.proc.vmmap")?;
 
         // Default to the current process if no PID was specified.
         let pid = match pid {
@@ -48,7 +48,7 @@ impl MemoryMaps<BufReader<File>> {
 
         let bytes = match ctl.value() {
             Ok(CtlValue::Node(bytes)) => bytes,
-            Ok(_) => panic!("unexpected"),
+            Ok(_) => panic!("unexpected CtlValue"),
             Err(e) => return Err(Error::Sysctl(e)),
         };
 
@@ -77,7 +77,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
 
         // Parse the protection flags and entry flags.
         bytes.copy_from_slice(&self.bytes[56..60]);
-        let flags = KvmeProtection::from_bits(u32::from_ne_bytes(bytes)).unwrap();
+        let flags = KvmeProtection::from_bits_truncate(u32::from_ne_bytes(bytes));
 
         let mut protection = ProtectionFlags::empty();
 
@@ -94,7 +94,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
         }
 
         bytes.copy_from_slice(&self.bytes[60..64]);
-        let flags = KvmeFlags::from_bits(u32::from_ne_bytes(bytes)).unwrap();
+        let flags = KvmeFlags::from_bits_truncate(u32::from_ne_bytes(bytes));
 
         if flags.contains(KvmeFlags::COW) {
             protection |= ProtectionFlags::COPY_ON_WRITE;
@@ -124,7 +124,12 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
         let path = if last == 0 {
             None
         } else {
-            Some((Path::new(std::str::from_utf8(&self.bytes[136..136 + last]).unwrap()).to_path_buf(), offset))
+            let path = match std::str::from_utf8(&self.bytes[136..136 + last]) {
+                Ok(path) => path,
+                Err(e) => return Some(Err(Error::Utf8(e))),
+            };
+
+            Some((Path::new(path).to_path_buf(), offset))
         };
 
         // Drain the bytes for this entry.
