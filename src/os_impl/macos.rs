@@ -9,7 +9,7 @@ use mach2::{
     vm_prot::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE},
     vm_region::VM_REGION_BASIC_INFO_64,
     vm_region::{vm_region_info_t, vm_region_basic_info_64},
-    vm_types::{mach_vm_address_t, mach_vm_size_t},
+    vm_types::mach_vm_address_t,
 };
 use nix::unistd::getpid;
 use std::fs::File;
@@ -40,7 +40,7 @@ impl MemoryMaps<BufReader<File>> {
             };
 
             if result != KERN_SUCCESS {
-                return Err(Error::Io(std::io::Error::last_os_error()));
+                return Err(Error::Mach(result));
             }
         }
 
@@ -123,7 +123,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                     path,
                 }))
             }
-            _ => panic!("mach result"),
+            _ => Some(Err(Error::Mach(result))),
         }
     }
 }
