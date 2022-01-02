@@ -22,4 +22,9 @@ pub enum Error {
     /// Represents [`nix::Error`].
     #[error(transparent)]
     Nix(#[from] nix::Error),
+
+    #[cfg(unix)]
+    /// Represents [`sysctl::SysctlError`].
+    #[error(transparent)]
+    Sysctl(#[from] sysctl::SysctlError),
 }

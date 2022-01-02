@@ -5,6 +5,9 @@ use std::io::{BufRead, BufReader};
 use std::ops::Range;
 use std::path::PathBuf;
 
+#[cfg(target_os = "freebsd")]
+use crate::os_impl::freebsd as platform;
+
 #[cfg(target_os = "linux")]
 use crate::os_impl::linux as platform;
 

@@ -15,6 +15,7 @@ thiserror = "1"
 
 [target.'cfg(unix)'.dependencies]
 nix = "0.23"
+sysctl = "0.4"
 
 [target.'cfg(windows)'.dependencies]
 widestring = "0.4"
