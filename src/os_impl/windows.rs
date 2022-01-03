@@ -513,8 +513,9 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 continue;
             }
 
-            let copy_on_write = protection == PAGE_EXECUTE_WRITECOPY ||
-                protection == PAGE_WRITECOPY;
+            let copy_on_write =
+                info.Protect == PAGE_EXECUTE_WRITECOPY ||
+                info.Protect == PAGE_WRITECOPY;
 
             let share_mode = if info.State & MEM_PRIVATE == MEM_PRIVATE {
                 ShareMode::Private
@@ -570,7 +571,5 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 path,
             }));
         }
-
-        None
     }
 }
