@@ -93,7 +93,11 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                     protection |= Protection::EXECUTE;
                 }
 
-                let share_mode = ShareMode::Private;
+                let share_mode = if info.shared != 0 {
+                    ShareMode::Shared
+                } else {
+                    ShareMode::Private
+                };
 
                 let mut bytes = [0u8; libc::PATH_MAX as _];
 
