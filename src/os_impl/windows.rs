@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use crate::areas::{MemoryArea, ProtectionFlags};
+use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::mmap::{MmapFlags, PageSize, UnsafeMmapFlags};
 use crate::error::Error;
 use std::fs::File;
@@ -513,24 +513,32 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 continue;
             }
 
+            let copy_on_write = protection == PAGE_EXECUTE_WRITECOPY ||
+                protection == PAGE_WRITECOPY;
+
+            let share_mode = if info.State & MEM_PRIVATE == MEM_PRIVATE {
+                ShareMode::Private
+            } else if copy_on_write {
+                ShareMode::CopyOnWrite
+            } else {
+                ShareMode::Shared
+            };
+
             let protection = match info.Protect {
                 PAGE_EXECUTE =>
-                    ProtectionFlags::EXECUTE,
+                    Protection::EXECUTE,
                 PAGE_EXECUTE_READ =>
-                    ProtectionFlags::READ | ProtectionFlags::EXECUTE,
-                PAGE_EXECUTE_READWRITE =>
-                    ProtectionFlags::READ | ProtectionFlags::WRITE | ProtectionFlags::EXECUTE,
+                    Protection::READ | Protection::EXECUTE,
+                PAGE_EXECUTE_READWRITE |
                 PAGE_EXECUTE_WRITECOPY =>
-                    ProtectionFlags::READ | ProtectionFlags::WRITE | ProtectionFlags::EXECUTE |
-                    ProtectionFlags::COPY_ON_WRITE,
+                    Protection::READ | Protection::WRITE | Protection::EXECUTE,
                 PAGE_READONLY =>
-                    ProtectionFlags::READ,
-                PAGE_READWRITE =>
-                    ProtectionFlags::READ | ProtectionFlags::WRITE,
+                    Protection::READ,
+                PAGE_READWRITE |
                 PAGE_WRITECOPY =>
-                    ProtectionFlags::READ | ProtectionFlags::WRITE | ProtectionFlags::COPY_ON_WRITE,
+                    Protection::READ | Protection::WRITE,
                 _ =>
-                    ProtectionFlags::empty(),
+                    Protection::empty(),
             };
 
             let mut name = vec![0u16; MAX_PATH as usize];
@@ -558,6 +566,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
             return Some(Ok(MemoryArea {
                 range,
                 protection,
+                share_mode,
                 path,
             }));
         }

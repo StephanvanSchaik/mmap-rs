@@ -1,4 +1,4 @@
-use crate::areas::{MemoryArea, ProtectionFlags};
+use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
 use libc::proc_regionfilename;
 use mach2::{
@@ -79,19 +79,21 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 let end = start + size as usize;
                 let range = start..end;
 
-                let mut protection = ProtectionFlags::empty();
+                let mut protection = Protection::empty();
 
                 if info.protection & VM_PROT_READ == VM_PROT_READ {
-                    protection |= ProtectionFlags::READ;
+                    protection |= Protection::READ;
                 }
 
                 if info.protection & VM_PROT_WRITE == VM_PROT_WRITE {
-                    protection |= ProtectionFlags::WRITE;
+                    protection |= Protection::WRITE;
                 }
 
                 if info.protection & VM_PROT_EXECUTE == VM_PROT_EXECUTE {
-                    protection |= ProtectionFlags::EXECUTE;
+                    protection |= Protection::EXECUTE;
                 }
+
+                let share_mode = ShareMode::Private;
 
                 let mut bytes = [0u8; libc::PATH_MAX as _];
 
@@ -120,6 +122,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 Some(Ok(MemoryArea {
                     range,
                     protection,
+                    share_mode,
                     path,
                 }))
             }

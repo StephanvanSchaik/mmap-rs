@@ -1,4 +1,4 @@
-use mmap_rs::{Error, MemoryMaps, ProtectionFlags};
+use mmap_rs::{Error, MemoryMaps, Protection, ShareMode};
 
 fn main() -> Result<(), Error> {
     let maps = MemoryMaps::open(None)?;
@@ -9,22 +9,22 @@ fn main() -> Result<(), Error> {
         println!("{:x}-{:x} {}{}{}{}{}",
             area.range.start,
             area.range.end,
-            if area.protection.contains(ProtectionFlags::READ) {
+            if area.protection.contains(Protection::READ) {
                 "r"
             } else {
                 "-"
             },
-            if area.protection.contains(ProtectionFlags::WRITE) {
+            if area.protection.contains(Protection::WRITE) {
                 "w"
             } else {
                 "-"
             },
-            if area.protection.contains(ProtectionFlags::EXECUTE) {
+            if area.protection.contains(Protection::EXECUTE) {
                 "x"
             } else {
                 "-"
             },
-            if area.protection.contains(ProtectionFlags::COPY_ON_WRITE) {
+            if area.share_mode == ShareMode::Shared {
                 "s"
             } else {
                 "p"

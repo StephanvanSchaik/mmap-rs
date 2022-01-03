@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use crate::areas::{MemoryArea, ProtectionFlags};
+use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
 use nix::unistd::getpid;
 use std::fs::File;
@@ -79,25 +79,27 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
         bytes.copy_from_slice(&self.bytes[56..60]);
         let flags = KvmeProtection::from_bits_truncate(u32::from_ne_bytes(bytes));
 
-        let mut protection = ProtectionFlags::empty();
+        let mut protection = Protection::empty();
 
         if flags.contains(KvmeProtection::READ) {
-            protection |= ProtectionFlags::READ;
+            protection |= Protection::READ;
         }
 
         if flags.contains(KvmeProtection::WRITE) {
-            protection |= ProtectionFlags::WRITE;
+            protection |= Protection::WRITE;
         }
 
         if flags.contains(KvmeProtection::EXECUTE) {
-            protection |= ProtectionFlags::EXECUTE;
+            protection |= Protection::EXECUTE;
         }
 
         bytes.copy_from_slice(&self.bytes[60..64]);
         let flags = KvmeFlags::from_bits_truncate(u32::from_ne_bytes(bytes));
 
-        if flags.contains(KvmeFlags::COW) {
-            protection |= ProtectionFlags::COPY_ON_WRITE;
+        let share_mode = if flags.contains(KvmeFlags::COW) {
+            ShareMode::CopyOnWrite
+        } else {
+            ShareMode::Private
         }
 
         // Parse the start address.

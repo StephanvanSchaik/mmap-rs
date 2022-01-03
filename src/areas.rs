@@ -18,17 +18,26 @@ use crate::os_impl::macos as platform;
 use crate::os_impl::windows as platform;
 
 bitflags! {
-    /// The protection flags of the memory area.
-    pub struct ProtectionFlags: u32 {
+    /// The protection of the memory area.
+    pub struct Protection: u32 {
         /// The memory area is mapped with read permissions.
         const READ          = 1 << 0;
         /// The memory area is mapped with write permissions.
         const WRITE         = 1 << 1;
         /// The memory area is mapped with execute permissions.
         const EXECUTE       = 1 << 3;
-        /// The memory area is mapped with copy-on-write.
-        const COPY_ON_WRITE = 1 << 4;
     }
+}
+
+/// The share mode of the memory area.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ShareMode {
+    /// The memory area is mapped as private.
+    Private,
+    /// The memory area is mapped as copy-on-write.
+    CopyOnWrite,
+    /// The memory area is mapped as shared.
+    Shared,
 }
 
 /// Describes a memory area of a process.
@@ -36,8 +45,10 @@ bitflags! {
 pub struct MemoryArea {
     /// The address range of the memory area.
     pub range: Range<usize>,
-    /// The protection flags with which the memory area has been mapped.
-    pub protection: ProtectionFlags,
+    /// The protection with which the memory area has been mapped.
+    pub protection: Protection,
+    /// The share mode of the memory area.
+    pub share_mode: ShareMode,
     /// The path to the file that backs this memory area, if backed by a file.
     pub path: Option<(PathBuf, u64)>,
 }

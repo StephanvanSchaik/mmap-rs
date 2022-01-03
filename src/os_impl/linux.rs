@@ -1,3 +1,5 @@
+use crate::areas::{MemoryArea, Protection, ShareMode};
+use crate::error::Error;
 use combine::{
     EasyParser, Parser, Stream,
     error::ParseError,
@@ -12,8 +14,6 @@ use std::io::{BufRead, BufReader};
 use std::io::Lines;
 use std::ops::Range;
 use std::path::PathBuf;
-use crate::areas::{MemoryArea, ProtectionFlags};
-use crate::error::Error;
 
 fn hex_digit1<Input>() -> impl Parser<Input, Output = String>
 where
@@ -36,7 +36,7 @@ where
         .map(|(start, _, end)| start..end)
 }
 
-fn permissions<Input>() -> impl Parser<Input, Output = ProtectionFlags>
+fn permissions<Input>() -> impl Parser<Input, Output = (Protection, ShareMode)>
 where
     Input: Stream<Token = char>,
 {
@@ -46,12 +46,12 @@ where
     };
 
     (
-        or(char('r').map(|_| ProtectionFlags::READ), char('-').map(|_| ProtectionFlags::empty())),
-        or(char('w').map(|_| ProtectionFlags::WRITE), char('-').map(|_| ProtectionFlags::empty())),
-        or(char('x').map(|_| ProtectionFlags::EXECUTE), char('-').map(|_| ProtectionFlags::empty())),
-        or(char('s').map(|_| ProtectionFlags::COPY_ON_WRITE), char('p').map(|_| ProtectionFlags::empty())),
+        or(char('r').map(|_| Protection::READ), char('-').map(|_| Protection::empty())),
+        or(char('w').map(|_| Protection::WRITE), char('-').map(|_| Protection::empty())),
+        or(char('x').map(|_| Protection::EXECUTE), char('-').map(|_| Protection::empty())),
+        or(char('s').map(|_| ShareMode::Shared), char('p').map(|_| ShareMode::Private)),
     )
-        .map(|(r, w, x, s)| r | w | x | s)
+        .map(|(r, w, x, s)| (r | w | x, s))
 }
 
 fn device_id<Input>() -> impl Parser<Input, Output = (u8, u8)>
@@ -102,10 +102,19 @@ where
         spaces(),
         optional(path()),
     )
-        .map(|(range, _, protection, _, offset, _, _, _, _, _, path)| MemoryArea {
-            range,
-            protection,
-            path: path.map(|path| (path, offset)),
+        .map(|(range, _, (protection, share_mode), _, offset, _, _, _, _, _, path)| {
+            let share_mode = if path.is_some() && share_mode == ShareMode::Private {
+                ShareMode::CopyOnWrite
+            } else {
+                share_mode
+            };
+
+            MemoryArea {
+                range,
+                protection,
+                share_mode,
+                path: path.map(|path| (path, offset)),
+            }
         })
 }
 
