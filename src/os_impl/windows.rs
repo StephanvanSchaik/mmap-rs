@@ -509,7 +509,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
 
             self.address += size;
 
-            if info.State & (MEM_COMMIT | MEM_PRIVATE | MEM_MAPPED | MEM_IMAGE) == 0 {
+            if info.State & MEM_COMMIT == 0 {
                 continue;
             }
 
@@ -517,7 +517,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 info.Protect == PAGE_EXECUTE_WRITECOPY ||
                 info.Protect == PAGE_WRITECOPY;
 
-            let share_mode = if info.State & MEM_PRIVATE == MEM_PRIVATE {
+            let share_mode = if info.Type & MEM_PRIVATE == MEM_PRIVATE {
                 ShareMode::Private
             } else if copy_on_write {
                 ShareMode::CopyOnWrite
