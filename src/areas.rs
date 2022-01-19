@@ -44,13 +44,57 @@ pub enum ShareMode {
 #[derive(Clone, Debug)]
 pub struct MemoryArea {
     /// The address range of the memory area.
-    pub range: Range<usize>,
+    pub(crate) range: Range<usize>,
     /// The protection with which the memory area has been mapped.
-    pub protection: Protection,
+    pub(crate) protection: Protection,
     /// The share mode of the memory area.
-    pub share_mode: ShareMode,
+    pub(crate) share_mode: ShareMode,
     /// The path to the file that backs this memory area, if backed by a file.
-    pub path: Option<(PathBuf, u64)>,
+    pub(crate) path: Option<(PathBuf, u64)>,
+}
+
+impl MemoryArea {
+    /// The address range of the memory area.
+    #[inline]
+    pub fn range(&self) -> &Range<usize> {
+        &self.range
+    }
+
+    /// The start address of the region.
+    #[inline]
+    pub fn start(&self) -> usize {
+        self.range.start
+    }
+
+    /// The end address of the region.
+    #[inline]
+    pub fn end(&self) -> usize {
+        self.range.end
+    }
+
+    /// The protection with which the memory area has been mapped.
+    #[inline]
+    pub fn protection(&self) -> Protection {
+        self.protection
+    }
+
+    /// The share mode of the memory area.
+    #[inline]
+    pub fn share_mode(&self) -> ShareMode {
+        self.share_mode
+    }
+
+    /// The path to the file that backs this memory area, if backed by a file.
+    #[inline]
+    pub fn path(&self) -> Option<&PathBuf> {
+        self.path.as_ref().map(|(path, _)| path)
+    }
+
+    /// The file offset, if backed by a file.
+    #[inline]
+    pub fn file_offset(&self) -> Option<u64> {
+        self.path.as_ref().map(|(_, offset)| *offset)
+    }
 }
 
 /// The memory maps of the process.
