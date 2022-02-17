@@ -22,3 +22,17 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+
+  aarch64-unknown-linux-gnu:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+        with:
+          override: true
+          components: rustfmt, clippy
+          target: aarch64-unknown-linux-gnu
+    - name: Build
+      run: cargo build --verbose --target aarch64-unknown-linux-gnu
