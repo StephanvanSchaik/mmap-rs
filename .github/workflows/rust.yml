@@ -42,7 +42,7 @@ jobs:
     - name: Create .cargo directory
       run: mkdir ${{env.home}}/.cargo
     - name: Write .cargo config
-      uses: DamianReeves/write-file-action@v1
+      uses: DamianReeves/write-file-action@v1.0
       with:
         path: ${{env.home}}/.cargo/config
         contents: |
