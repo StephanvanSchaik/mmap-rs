@@ -39,9 +39,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt -y install qemu-user qemu-user-static gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu binutils-aarch64-linux-gnu-dbg
-    - name: Create .cargo directory
-      run: mkdir ~/.cargo
-    - name: Write .cargo config
+    - name: Append .cargo config
       uses: DamianReeves/write-file-action@v1.0
       with:
         path: ${{env.home}}/.cargo/config
