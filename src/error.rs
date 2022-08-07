@@ -32,7 +32,7 @@ pub enum Error {
     #[error(transparent)]
     Sysctl(#[from] sysctl::SysctlError),
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     /// The error code returned from the Mach API.
     #[error("Mach kernel result = {0}")]
     Mach(libc::c_int),

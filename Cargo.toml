@@ -34,5 +34,5 @@ features = [
     "Win32_System_Threading",
 ]
 
-[target.'cfg(target_os = "macos")'.dependencies]
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
 mach2 = "0.4"
