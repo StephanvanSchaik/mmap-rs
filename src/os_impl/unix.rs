@@ -7,6 +7,12 @@ use std::fs::File;
 use std::ops::Range;
 use std::os::unix::io::AsRawFd;
 
+#[cfg(target_os = "ios")]
+extern "C" {
+    fn sys_icache_invalidate(start: *mut core::ffi::c_void, size: usize);
+}
+
+#[cfg(not(target_os = "ios"))]
 extern "C" {
     /// This function is provided by LLVM to clear the instruction cache for the specified range.
     fn __clear_cache(start: *mut core::ffi::c_void, end: *mut core::ffi::c_void);
@@ -92,6 +98,19 @@ impl Mmap {
         Ok(())
     }
 
+    #[cfg(target_os = "ios")]
+    pub fn flush_icache(&self) -> Result<(), Error> {
+        unsafe {
+            sys_icache_invalidate(
+                self.ptr as *mut std::ffi::c_void,
+                self.size as usize,
+            )
+        };
+
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "ios"))]
     pub fn flush_icache(&self) -> Result<(), Error> {
         unsafe {
             __clear_cache(
