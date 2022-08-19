@@ -53,12 +53,13 @@ jobs:
 
   bsd:
     runs-on: ubuntu-latest
-    strategy: matrix:
-      os:
-      - name: freebsd
-        version: '13.0'
-      - name: freebsd
-        version: '12.2'
+    strategy:
+      matrix:
+        os:
+        - name: freebsd
+          version: '13.0'
+        - name: freebsd
+          version: '12.2'
 
     steps:
     - uses: actions/checkout@v2
