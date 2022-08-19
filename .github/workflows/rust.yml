@@ -53,12 +53,18 @@ jobs:
 
   freebsd:
     runs-on: macos-12
-    name: Build (FreeBSD)
+    strategy:
+      matrix:
+        os:
+        - release: '13.1'
+        - release: '12.3'
+
     steps:
     - uses: actions/checkout@v3
-    - name: Build
+    - name: Build (freebsd-${{ matrix.os.release }})
       uses: vmactions/freebsd-vm@v0
       with:
+        release: ${{ matrix.os.release }}
         envs: 'RUSTFLAGS'
         usesh: true
         prepare: |
