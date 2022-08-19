@@ -100,7 +100,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
             ShareMode::CopyOnWrite
         } else {
             ShareMode::Private
-        }
+        };
 
         // Parse the start address.
         let mut bytes = [0u8; 8];
@@ -140,6 +140,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
         Some(Ok(MemoryArea {
             range: start..end,
             protection,
+            share_mode,
             path,
         }))
     }
