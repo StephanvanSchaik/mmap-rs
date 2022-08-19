@@ -51,17 +51,25 @@ jobs:
         cargo run --target aarch64-unknown-linux-gnu --example areas
         cargo run --target aarch64-unknown-linux-gnu --example map_anon
 
-  freebsd:
-    runs-on: macos-12
-    name: build (FreeBSD)
+  bsd:
+    runs-on: ubuntu-latest
+    strategy: matrix:
+      os:
+      - name: freebsd
+        version: '13.0'
+      - name: freebsd
+        version: '12.2'
+
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      uses: vmactions/freebsd-vm@v0
+    - name: Build (${{ matrix.os.name }}
+      uses: cross-platform-actions/action@v0.3.1
       with:
-        prepare: |
-          pkg install -y curl
+        operating_system: ${{ matrix.os.name }}
+        version: ${{ matrix.os.version }}
+        shell: bash
         run: |
+          pkg install -y curl
           curl https://sh.rustup.rs -sSf | sh -s -- --profile minimal -y
           source "$HOME/.cargo/env"
           cargo build --verbose
