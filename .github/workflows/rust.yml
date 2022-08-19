@@ -70,7 +70,6 @@ jobs:
         version: ${{ matrix.os.version }}
         shell: bash
         run: |
-          pkg install -y curl
           curl https://sh.rustup.rs -sSf | sh -s -- --profile minimal -y
           source "$HOME/.cargo/env"
           cargo build --verbose
