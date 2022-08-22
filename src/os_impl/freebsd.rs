@@ -1,15 +1,13 @@
 use bitflags::bitflags;
 use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
-use nix::unistd::getpid;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
 use std::path::Path;
-use sysctl::{CtlValue, Sysctl};
 
 bitflags! {
-    pub struct KvmeProtection: u32 {
+    pub struct KvmeProtection: libc::c_int {
         const READ    = 1 << 0;
         const WRITE   = 1 << 1;
         const EXECUTE = 1 << 2;
@@ -17,7 +15,7 @@ bitflags! {
 }
 
 bitflags! {
-    pub struct KvmeFlags: u32 {
+    pub struct KvmeFlags: libc::c_int {
         const COW        = 1 << 0;
         const NEEDS_COPY = 1 << 1;
         const NOCOREDUMP = 1 << 2;
@@ -29,31 +27,35 @@ bitflags! {
 }
 
 pub struct MemoryMaps<B> {
-    bytes: Vec<u8>,
+    entries: Vec<libc::kinfo_vmentry>,
+    index: usize,
     marker: PhantomData<B>,
 }
 
 impl MemoryMaps<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
-        let mut ctl = sysctl::Ctl::new("kern.proc.vmmap")?;
-
         // Default to the current process if no PID was specified.
         let pid = match pid {
-            Some(pid) => pid,
-            _ => getpid().as_raw() as u32,
+            Some(pid) => pid as _,
+            _ => unsafe { libc::getpid() },
         };
 
-        // Push the PID as part of the oid to query the VM map of the process.
-        ctl.oid.push(pid as i32);
-
-        let bytes = match ctl.value() {
-            Ok(CtlValue::Node(bytes)) => bytes,
-            Ok(_) => panic!("unexpected CtlValue"),
-            Err(e) => return Err(Error::Sysctl(e)),
+        let mut count = 0;
+        let entries_ptr = unsafe {
+            libc::kinfo_getvmmap(pid, &mut count)
         };
+
+        let entries = unsafe {
+            core::from_raw_parts(entries_ptr, count)
+        }.to_vec();
+
+        unsafe {
+            libc::free(entries_ptr as *core::ffi::c_void);
+        }
 
         Ok(Self {
-            bytes,
+            entries,
+            index: 0,
             marker: PhantomData,
         })
     }
@@ -63,21 +65,12 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Parsing the entry is based on `struct kinfo_vmentry` as defined by
-        // /usr/include/sys/user.h.
-
         // Parse the entry size.
-        if self.bytes.len() < 4 {
+        if self.index >= self.entries.len() {
             return None;
         }
 
-        let mut bytes = [0u8; 4];
-        bytes.copy_from_slice(&self.bytes[0..4]);
-        let entry_size = u32::from_ne_bytes(bytes) as usize;
-
-        // Parse the protection flags and entry flags.
-        bytes.copy_from_slice(&self.bytes[56..60]);
-        let flags = KvmeProtection::from_bits_truncate(u32::from_ne_bytes(bytes));
+        let flags = KvmeProtection::from_bits_truncate(entry.kve_protection);
 
         let mut protection = Protection::empty();
 
@@ -93,8 +86,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
             protection |= Protection::EXECUTE;
         }
 
-        bytes.copy_from_slice(&self.bytes[60..64]);
-        let flags = KvmeFlags::from_bits_truncate(u32::from_ne_bytes(bytes));
+        let flags = KvmeFlags::from_bits_truncate(entry.kve_flags);
 
         let share_mode = if flags.contains(KvmeFlags::COW) {
             ShareMode::CopyOnWrite
@@ -102,21 +94,12 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
             ShareMode::Private
         };
 
-        // Parse the start address.
-        let mut bytes = [0u8; 8];
-        bytes.copy_from_slice(&self.bytes[8..16]);
-        let start = u64::from_ne_bytes(bytes) as usize;
-
-        // Parse the end address.
-        bytes.copy_from_slice(&self.bytes[16..24]);
-        let end = u64::from_ne_bytes(bytes) as usize;
-
-        // Parse the offset.
-        bytes.copy_from_slice(&self.bytes[24..32]);
-        let offset = u64::from_ne_bytes(bytes);
+        let start = entry.kve_start as usize;
+        let end = entry.kve_end as usize;
+        let offset = entry.kve_offset;
 
         // Parse the path.
-        let path = &self.bytes[136..];
+        let path = entry.kve_path.iter().flatten().map(|byte| *byte as u8).collect();
 
         let last = match path.iter().position(|&c| c == 0) {
             Some(end) => end,
@@ -126,16 +109,13 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
         let path = if last == 0 {
             None
         } else {
-            let path = match std::str::from_utf8(&self.bytes[136..136 + last]) {
+            let path = match std::str::from_utf8(&path) {
                 Ok(path) => path,
                 Err(e) => return Some(Err(Error::Utf8(e))),
             };
 
             Some((Path::new(path).to_path_buf(), offset))
         };
-
-        // Drain the bytes for this entry.
-        self.bytes.drain(..entry_size);
 
         Some(Ok(MemoryArea {
             range: start..end,
