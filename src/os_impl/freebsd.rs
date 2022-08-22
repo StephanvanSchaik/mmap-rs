@@ -46,11 +46,11 @@ impl MemoryMaps<BufReader<File>> {
         };
 
         let entries = unsafe {
-            core::from_raw_parts(entries_ptr, count)
+            core::slice::from_raw_parts(entries_ptr, count)
         }.to_vec();
 
         unsafe {
-            libc::free(entries_ptr as *core::ffi::c_void);
+            libc::free(entries_ptr as *mut core::ffi::c_void);
         }
 
         Ok(Self {
@@ -65,10 +65,12 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // Parse the entry size.
         if self.index >= self.entries.len() {
             return None;
         }
+
+        let entry = &self.entries[self.index];
+        self.index += 1;
 
         let flags = KvmeProtection::from_bits_truncate(entry.kve_protection);
 
