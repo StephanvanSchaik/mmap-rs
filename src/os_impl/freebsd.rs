@@ -46,7 +46,7 @@ impl MemoryMaps<BufReader<File>> {
         };
 
         let entries = unsafe {
-            core::slice::from_raw_parts(entries_ptr, count)
+            core::slice::from_raw_parts(entries_ptr, count as usize)
         }.to_vec();
 
         unsafe {
@@ -101,7 +101,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
         let offset = entry.kve_offset;
 
         // Parse the path.
-        let path = entry.kve_path.iter().flatten().map(|byte| *byte as u8).collect();
+        let path: Vec<u8> = entry.kve_path.iter().flatten().map(|byte| *byte as u8).collect();
 
         let last = match path.iter().position(|&c| c == 0) {
             Some(end) => end,
