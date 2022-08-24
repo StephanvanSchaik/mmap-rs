@@ -6,7 +6,8 @@ use std::fs::File;
 use std::ops::Range;
 use std::os::windows::io::AsRawHandle;
 use std::path::PathBuf;
-use windows::Win32::Foundation::{CloseHandle, HANDLE, MAX_PATH, PWSTR};
+use windows::core::PCWSTR;
+use windows::Win32::Foundation::{CloseHandle, HANDLE, MAX_PATH};
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
 use windows::Win32::System::Diagnostics::Debug::FlushInstructionCache;
 use windows::Win32::System::Memory::*;
@@ -195,7 +196,8 @@ impl Drop for Mmap {
                 VirtualFree(
                     self.ptr as *mut _,
                     self.size,
-                    MEM_DECOMMIT | MEM_RELEASE,
+                    // FIXME: for some reason BitOr is not implemented for VIRTUAL_FREE_TYPE.
+                    VIRTUAL_FREE_TYPE(MEM_DECOMMIT.0 | MEM_RELEASE.0),
                 )
             };
         }
@@ -277,8 +279,13 @@ impl MmapOptions {
                 protection,
                 0,
                 0,
-                PWSTR(std::ptr::null_mut()),
+                PCWSTR::null(),
             )
+        };
+
+        let file_mapping = match file_mapping {
+            Ok(file_mapping) => file_mapping,
+            _ => return false,
         };
 
         // Return false if we could not create the mapping.
@@ -337,9 +344,9 @@ impl MmapOptions {
                     map_protection,
                     ((size >> 32) & 0xffff_ffff) as u32,
                     (size & 0xffff_ffff) as u32,
-                    PWSTR(std::ptr::null_mut()),
+                    PCWSTR::null(),
                 )
-            };
+            }?;
 
             let ptr = unsafe {
                 MapViewOfFileEx(
@@ -468,7 +475,7 @@ impl MemoryMaps<BufReader<File>> {
                 PROCESS_ALL_ACCESS,
                 false,
                 id,
-            ) },
+            ) }?,
             _ => unsafe { GetCurrentProcess() },
         };
 
@@ -509,7 +516,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
 
             self.address += size;
 
-            if info.State & MEM_COMMIT == 0 {
+            if info.State & MEM_COMMIT == VIRTUAL_ALLOCATION_TYPE(0) {
                 continue;
             }
 
@@ -548,8 +555,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
                 K32GetMappedFileNameW(
                     self.handle,
                     address as *const std::ffi::c_void,
-                    PWSTR(name.as_mut_ptr()),
-                    name.len() as u32,
+                    &mut name,
                 )
             };
 

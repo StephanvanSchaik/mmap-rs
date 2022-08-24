@@ -36,4 +36,9 @@ pub enum Error {
     /// The error code returned from the Mach API.
     #[error("Mach kernel result = {0}")]
     Mach(libc::c_int),
+
+    #[cfg(target_os = "windows")]
+    /// Represents [`windows::core::Error`].
+    #[error(transparent)]
+    Windows(#[from] windows::core::Error),
 }
