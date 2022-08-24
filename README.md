@@ -1,6 +1,6 @@
 # mmap-rs
 
-[![Build Status](https://github.com/StephanvanSchaik/mmap-rs/actions/workflows/rust.yml/badge.svg?branch=master)](https://github.com/StephanvanSchaik/mmap-rs/actions/workflows/rust.yml)
+[![CI](https://github.com/StephanvanSchaik/mmap-rs/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/StephanvanSchaik/mmap-rs/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/mmap-rs.svg)](https://crates.io/crates/mmap-rs)
 [![Docs](https://docs.rs/mmap-rs/badge.svg)](https://docs.rs/mmap-rs)
 
