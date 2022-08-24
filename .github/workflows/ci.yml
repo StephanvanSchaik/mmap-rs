@@ -34,7 +34,7 @@ jobs:
         - arch: 'arm'
           rust: 'armv7-unknown-linux-gnueabihf'
           os: 'arm-linux-gnueabihf'
-        - arch: 'i686'
+        - arch: 'i386'
           rust: 'i686-unknown-linux-gnu'
           os: 'i686-linux-gnu'
 
