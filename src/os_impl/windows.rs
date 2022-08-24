@@ -159,7 +159,7 @@ impl Mmap {
     }
 
     pub fn make_mut(&self) -> Result<(), Error> {
-        let protect = if self.flags.contains(Flags::COPY_ON_WRITE) {
+        let protect = if self.file.is_some() && self.flags.contains(Flags::COPY_ON_WRITE) {
             PAGE_WRITECOPY
         } else {
             PAGE_READWRITE
@@ -435,7 +435,7 @@ impl MmapOptions {
     }
 
     pub fn map_mut(self) -> Result<Mmap, Error> {
-        let protect = if self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+        let protect = if self.file.is_some() && self.flags.contains(MmapFlags::COPY_ON_WRITE) {
             PAGE_WRITECOPY
         } else {
             PAGE_READWRITE
