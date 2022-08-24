@@ -332,7 +332,7 @@ impl MmapOptions {
                     .unwrap_or(-1),
                 self.file
                     .as_ref()
-                    .map(|(_, offset)| *offset as i64)
+                    .map(|(_, offset)| *offset as _)
                     .unwrap_or(0),
             )
         }?;
