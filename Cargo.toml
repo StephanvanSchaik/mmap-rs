@@ -15,11 +15,11 @@ libc = "0.2"
 thiserror = "1"
 
 [target.'cfg(unix)'.dependencies]
-nix = "0.23"
-sysctl = "0.4"
+nix = "0.24"
+sysctl = "0.5"
 
 [target.'cfg(windows)'.dependencies]
-widestring = "0.4"
+widestring = "1"
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.39"

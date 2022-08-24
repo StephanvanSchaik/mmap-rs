@@ -560,7 +560,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
             };
 
             let path = if name_size != 0 {
-                let path = widestring::U16CStr::from_slice_with_nul(&name).unwrap();
+                let path = widestring::U16CStr::from_slice_truncate(&name).unwrap();
                 let path = path.to_string_lossy();
 
                 let offset = (info.BaseAddress as u64) - (info.AllocationBase as u64);
