@@ -342,7 +342,10 @@ impl MmapOptions {
                     HANDLE(file.as_raw_handle() as isize),
                     std::ptr::null_mut(),
                     map_protection,
-                    ((size >> 32) & 0xffff_ffff) as u32,
+                    (match size.overflowing_shr(32) {
+                        (_, true) => 0,
+                        (size, false) => size,
+                    } & 0xffff_ffff) as u32,
                     (size & 0xffff_ffff) as u32,
                     PCWSTR::null(),
                 )
@@ -492,7 +495,7 @@ impl<B: BufRead> Iterator for MemoryMaps<B> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut info = MEMORY_BASIC_INFORMATION::default();
-        
+
         loop {
             let address = self.address;
 

@@ -23,6 +23,25 @@ jobs:
     - name: Run tests
       run: cargo test
 
+  cross-windows:
+    runs-on: windows-2019
+    stategy:
+      matrix:
+        target:
+          - rust: 'aarch64-pc-windows-msvc'
+          - rust: 'i686-pc-windows-msvc'
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+        target: ${{ matrix.target.rust }}
+    - name: Build
+      run: cargo build --target ${{ matrix.target.rust }}
+
   cross-linux:
     runs-on: ubuntu-latest
     strategy:

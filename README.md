@@ -14,6 +14,8 @@ Furthermore, this crate allows you to enumerate the memory mappings of a process
 Tier 1 (builds and tests are run in CI):
 
  * `x86_64-pc-windows-msvc`
+ * `i686-pc-windows-msvc`
+ * `aarch64-pc-windows-msvc`
  * `x86_64-unknown-linux-gnu`
  * `i686-unknown-linux-gnu`
  * `aarch64-unknown-linux-gnu`
@@ -27,7 +29,6 @@ Tier 2 (builds are run in CI):
 
 Tier 3 (no CI, but should work):
 
- * `i686-pc-windows-msvc`
  * `aarch64-apple-darwin`
  * `x86_64-apple-ios`
  * `i686-unknown-freebsd`
