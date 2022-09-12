@@ -17,14 +17,14 @@ use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
 use std::path::Path;
 
-pub struct MemoryMaps<B> {
+pub struct MemoryAreas<B> {
     pid: u32,
     task: mach_port_name_t,
     address: mach_vm_address_t,
     marker: PhantomData<B>,
 }
 
-impl MemoryMaps<BufReader<File>> {
+impl MemoryAreas<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
         let task = unsafe {
             mach_task_self()
@@ -53,7 +53,7 @@ impl MemoryMaps<BufReader<File>> {
     }
 }
 
-impl<B: BufRead> Iterator for MemoryMaps<B> {
+impl<B: BufRead> Iterator for MemoryAreas<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -465,13 +465,13 @@ impl MmapOptions {
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
 
-pub struct MemoryMaps<B> {
+pub struct MemoryAreas<B> {
     handle: HANDLE,
     address: usize,
     marker: PhantomData<B>,
 }
 
-impl MemoryMaps<BufReader<File>> {
+impl MemoryAreas<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
         let handle = match pid {
             Some(id) => unsafe { OpenProcess(
@@ -490,7 +490,7 @@ impl MemoryMaps<BufReader<File>> {
     }
 }
 
-impl<B: BufRead> Iterator for MemoryMaps<B> {
+impl<B: BufRead> Iterator for MemoryAreas<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {

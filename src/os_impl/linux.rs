@@ -118,11 +118,11 @@ where
         })
 }
 
-pub struct MemoryMaps<B> {
+pub struct MemoryAreas<B> {
     lines: Lines<B>,
 }
 
-impl MemoryMaps<BufReader<File>> {
+impl MemoryAreas<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
         let path = match pid {
             Some(pid) => format!("/proc/{}/maps", pid),
@@ -139,7 +139,7 @@ impl MemoryMaps<BufReader<File>> {
     }
 }
 
-impl<B: BufRead> Iterator for MemoryMaps<B> {
+impl<B: BufRead> Iterator for MemoryAreas<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {

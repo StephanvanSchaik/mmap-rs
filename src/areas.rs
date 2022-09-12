@@ -60,13 +60,13 @@ impl MemoryArea {
         &self.range
     }
 
-    /// The start address of the region.
+    /// The start address of the area.
     #[inline]
     pub fn start(&self) -> usize {
         self.range.start
     }
 
-    /// The end address of the region.
+    /// The end address of the area.
     #[inline]
     pub fn end(&self) -> usize {
         self.range.end
@@ -97,16 +97,16 @@ impl MemoryArea {
     }
 }
 
-/// The memory maps of the process.
-pub struct MemoryMaps<B> {
-    inner: platform::MemoryMaps<B>,
+/// The memory areas of the process.
+pub struct MemoryAreas<B> {
+    inner: platform::MemoryAreas<B>,
 }
 
-impl MemoryMaps<BufReader<File>> {
+impl MemoryAreas<BufReader<File>> {
     /// Creates an iterator over the memory maps for the specified process. If no process ID is
     /// given, then it enumerates the memory areas of the current process.
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
-        let inner = platform::MemoryMaps::open(pid)?;
+        let inner = platform::MemoryAreas::open(pid)?;
 
         Ok(Self {
             inner,
@@ -114,7 +114,7 @@ impl MemoryMaps<BufReader<File>> {
     }
 }
 
-impl<B: BufRead> Iterator for MemoryMaps<B> {
+impl<B: BufRead> Iterator for MemoryAreas<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {

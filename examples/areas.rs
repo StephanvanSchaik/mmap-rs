@@ -1,7 +1,7 @@
-use mmap_rs::{Error, MemoryMaps, Protection, ShareMode};
+use mmap_rs::{Error, MemoryAreas, Protection, ShareMode};
 
 fn main() -> Result<(), Error> {
-    let maps = MemoryMaps::open(None)?;
+    let maps = MemoryAreas::open(None)?;
 
     for area in maps {
         let area = area?;
