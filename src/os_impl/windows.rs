@@ -29,6 +29,9 @@ pub struct Mmap {
     flags: Flags,
 }
 
+unsafe impl Send for Mmap {}
+unsafe impl Sync for Mmap {}
+
 impl Mmap {
     #[inline]
     pub fn file(&self) -> Option<&File> {
