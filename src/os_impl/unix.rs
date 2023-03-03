@@ -351,6 +351,17 @@ impl MmapOptions {
             }?;
         }
 
+        #[cfg(any(target_os = "android", target_os = "linux"))]
+        if self.flags.contains(MmapFlags::TRANSPARENT_HUGE_PAGES) {
+            unsafe {
+                madvise(
+                    ptr,
+                    size,
+                    MmapAdvise::MADV_HUGEPAGES,
+                )
+            }?;
+        }
+
         #[cfg(any(target_os = "dragonfly", target_os = "freebsd"))]
         if self.flags.contains(MmapFlags::NO_CORE_DUMP) {
             unsafe {

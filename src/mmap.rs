@@ -15,26 +15,29 @@ bitflags! {
         /// May initially map the pages as shared between multiple mappings, but creates a private
         /// copy when writing to the pages such that any modifications are not visible to any other
         /// processes.
-        const COPY_ON_WRITE = 1 << 0;
+        const COPY_ON_WRITE          = 1 << 0;
 
         /// Ensure the allocated pages are populated, such that they do not cause page faults.
-        const POPULATE      = 1 << 1;
+        const POPULATE               = 1 << 1;
 
         /// Do not reserve swap space for this allocation.
-        const NO_RESERVE    = 1 << 2;
+        const NO_RESERVE             = 1 << 2;
 
         /// Use huge pages for this allocation.
-        const HUGE_PAGES    = 1 << 3;
+        const HUGE_PAGES             = 1 << 3;
 
         /// The region grows downward like a stack.
-        const STACK         = 1 << 4;
+        const STACK                  = 1 << 4;
 
         /// The pages will not be included in a core dump.
-        const NO_CORE_DUMP  = 1 << 5;
+        const NO_CORE_DUMP           = 1 << 5;
 
         /// Lock the physical memory to prevent page faults from happening when accessing the
         /// pages.
-        const LOCKED        = 1 << 6;
+        const LOCKED                 = 1 << 6;
+
+        /// Suggest to use transparent huge pages for this allocation by calling madvise().
+        const TRANSPARENT_HUGE_PAGES = 1 << 7;
     }
 
     /// The available flags to configure the allocated mapping, but that are considered unsafe to
