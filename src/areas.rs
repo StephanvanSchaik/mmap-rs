@@ -8,7 +8,7 @@ use std::path::PathBuf;
 #[cfg(target_os = "freebsd")]
 use crate::os_impl::freebsd as platform;
 
-#[cfg(target_os = "linux")]
+#[cfg(any(target_os = "android", target_os = "linux"))]
 use crate::os_impl::linux as platform;
 
 #[cfg(any(target_os = "macos", target_os = "ios"))]

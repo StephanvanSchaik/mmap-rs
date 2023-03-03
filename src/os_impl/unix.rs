@@ -261,7 +261,12 @@ impl MmapOptions {
             flags |= MapFlags::MAP_HUGETLB;
         }
 
-        #[cfg(any(target_os = "android", target_os = "linux"))]
+        #[cfg(target_os = "android")]
+        if let Some(_page_size) = self.page_size {
+            flags |= MapFlags::MAP_HUGETLB;
+        }
+
+        #[cfg(target_os = "linux")]
         if let Some(page_size) = self.page_size {
             flags |= MapFlags::MAP_HUGETLB;
 
