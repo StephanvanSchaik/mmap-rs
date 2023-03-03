@@ -249,12 +249,12 @@ impl MmapOptions {
     }
 
     pub fn with_flags(mut self, flags: MmapFlags) -> Self {
-        self.flags = flags;
+        self.flags |= flags;
         self
     }
 
     pub unsafe fn with_unsafe_flags(mut self, flags: UnsafeMmapFlags) -> Self {
-        self.unsafe_flags = flags;
+        self.unsafe_flags |= flags;
         self
     }
 
