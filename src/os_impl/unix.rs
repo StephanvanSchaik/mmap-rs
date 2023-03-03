@@ -357,7 +357,7 @@ impl MmapOptions {
                 madvise(
                     ptr,
                     size,
-                    MmapAdvise::MADV_HUGEPAGES,
+                    MmapAdvise::MADV_HUGEPAGE,
                 )
             }?;
         }
