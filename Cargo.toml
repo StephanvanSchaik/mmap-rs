@@ -1,7 +1,7 @@
 [package]
 name = "mmap-rs"
 version = "0.5.0"
-edition = "2018"
+edition = "2021"
 authors = ["Stephan van Schaik <stephan@synkhronix.com>"]
 license = "Apache-2.0 OR MIT"
 description = "A cross-platform and safe Rust API to create and manage memory mappings in the virtual address space of the calling process."
