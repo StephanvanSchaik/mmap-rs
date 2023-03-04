@@ -141,7 +141,7 @@ impl Mmap {
         unsafe {
             FlushInstructionCache(
                 GetCurrentProcess(),
-                self.ptr as *const std::ffi::c_void,
+                Some(self.ptr as *const std::ffi::c_void),
                 self.size,
             )
         };
