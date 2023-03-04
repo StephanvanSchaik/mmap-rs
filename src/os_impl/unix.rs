@@ -8,7 +8,7 @@ use std::num::NonZeroUsize;
 use std::ops::Range;
 use std::os::unix::io::AsRawFd;
 
-#[cfg(not(any(target_os = "freebsd", target_os = "linux")))]
+#[cfg(not(any(target_os = "android", target_os = "freebsd", target_os = "linux")))]
 use crate::PageSizes;
 
 #[cfg(target_os = "ios")]
@@ -212,7 +212,7 @@ impl MmapOptions {
         size
     }
 
-    #[cfg(not(any(target_os = "freebsd", target_os = "linux")))]
+    #[cfg(not(any(target_os = "android", target_os = "freebsd", target_os = "linux")))]
     pub fn page_sizes() -> Result<PageSizes, Error> {
         let sizes = 1 << Self::page_size().ilog2();
 
