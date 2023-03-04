@@ -394,10 +394,10 @@ pub struct MmapOptions {
 impl MmapOptions {
     /// Constructs the `MmapOptions` builder. The size specified is the size of the mapping to be
     /// allocated in bytes.
-    pub fn new(size: usize) -> Self {
-        Self {
-            inner: platform::MmapOptions::new(size),
-        }
+    pub fn new(size: usize) -> Result<Self, Error> {
+        Ok(Self {
+            inner: platform::MmapOptions::new(size)?,
+        })
     }
 
     /// Returns the smallest possible page size for the current platform as well as the allocation

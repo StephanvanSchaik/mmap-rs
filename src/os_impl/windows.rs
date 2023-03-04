@@ -217,15 +217,15 @@ pub struct MmapOptions {
 }
 
 impl MmapOptions {
-    pub fn new(size: usize) -> Self {
-        Self {
+    pub fn new(size: usize) -> Result<Self, Error> {
+        Ok(Self {
             address: None,
             file: None,
             size,
             flags: MmapFlags::empty(),
             unsafe_flags: UnsafeMmapFlags::empty(),
             page_size: None,
-        }
+        })
     }
 
     pub fn page_size() -> (usize, usize) {

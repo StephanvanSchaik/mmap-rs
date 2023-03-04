@@ -15,7 +15,7 @@ libc = "0.2"
 thiserror = "1"
 
 [target.'cfg(unix)'.dependencies]
-nix = "0.24"
+nix = "0.26"
 sysctl = "0.5"
 
 [target.'cfg(windows)'.dependencies]

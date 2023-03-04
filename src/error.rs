@@ -10,6 +10,10 @@ pub enum Error {
     #[error("{0:?} must be set")]
     UnsafeFlagNeeded(UnsafeMmapFlags),
 
+    /// The size is invalid.
+    #[error("invalid size")]
+    InvalidSize,
+
     /// Represents [`std::io::Error`].
     #[error(transparent)]
     Io(#[from] std::io::Error),

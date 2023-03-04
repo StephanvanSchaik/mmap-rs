@@ -4,6 +4,7 @@ use crate::error::Error;
 use nix::sys::mman::*;
 use nix::unistd::*;
 use std::fs::File;
+use std::num::NonZeroUsize;
 use std::ops::Range;
 use std::os::unix::io::AsRawFd;
 
@@ -179,22 +180,22 @@ impl Drop for Mmap {
 pub struct MmapOptions {
     address: Option<usize>,
     file: Option<(File, u64)>,
-    size: usize,
+    size: NonZeroUsize,
     flags: MmapFlags,
     unsafe_flags: UnsafeMmapFlags,
     page_size: Option<PageSize>,
 }
 
 impl MmapOptions {
-    pub fn new(size: usize) -> Self {
-        Self {
+    pub fn new(size: usize) -> Result<Self, Error> {
+        Ok(Self {
             address: None,
             file: None,
-            size,
+            size: NonZeroUsize::new(size).ok_or(Error::InvalidSize)?,
             flags: MmapFlags::empty(),
             unsafe_flags: UnsafeMmapFlags::empty(),
             page_size: None,
-        }
+        })
     }
 
     pub fn page_size() -> (usize, usize) {
@@ -323,9 +324,7 @@ impl MmapOptions {
         let size = self.size;
         let ptr = unsafe {
             mmap(
-                self.address
-                    .map(|address| address as *mut std::ffi::c_void)
-                    .unwrap_or(std::ptr::null_mut()),
+                self.address.map(|address| NonZeroUsize::new(address)).flatten(),
                 size,
                 protect,
                 self.flags(),
@@ -345,7 +344,7 @@ impl MmapOptions {
             unsafe {
                 madvise(
                     ptr,
-                    size,
+                    size.get(),
                     MmapAdvise::MADV_DONTDUMP,
                 )
             }?;
@@ -356,7 +355,7 @@ impl MmapOptions {
             unsafe {
                 madvise(
                     ptr,
-                    size,
+                    size.get(),
                     MmapAdvise::MADV_HUGEPAGE,
                 )
             }?;
@@ -392,7 +391,7 @@ impl MmapOptions {
         Ok(Mmap {
             file: self.file.map(|(file, _)| file),
             ptr: ptr as *mut u8,
-            size,
+            size: size.get(),
             flags,
         })
     }
