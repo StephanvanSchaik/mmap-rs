@@ -112,7 +112,7 @@ jobs:
       matrix:
         target:
         - rust: 'aarch64-linux-android'
-        - rust: 'armv7-linux-android'
+        - rust: 'armv7-linux-androideabi'
         - rust: 'x86_64-linux-android'
         - rust: 'i686-linux-android'
 
@@ -123,7 +123,7 @@ jobs:
       with:
         toolchain: stable
         override: true
-        components: rust-std, rustfmt, clippy
+        components: rustfmt, clippy
         target: ${{ matrix.target.rust }}
     - name: Build
       run: cargo build --target ${{ matrix.target.rust }}
