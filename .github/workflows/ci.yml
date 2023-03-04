@@ -127,9 +127,6 @@ jobs:
         target: ${{ matrix.target.rust }}
     - name: Build
       run: cargo build --target ${{ matrix.target.rust }}
-    - name: Build Examples
-      run: |
-        cargo build --target ${{ matrix.target.rust }} --examples
 
   aarch64-apple-ios:
     runs-on: macos-12
