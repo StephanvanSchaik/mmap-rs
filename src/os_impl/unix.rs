@@ -366,7 +366,7 @@ impl MmapOptions {
             unsafe {
                 madvise(
                     ptr,
-                    size,
+                    size.get(),
                     MmapAdvise::MADV_NOCORE,
                 )
             }?;
@@ -377,7 +377,7 @@ impl MmapOptions {
             unsafe {
                 mlock(
                     ptr,
-                    size,
+                    size.get(),
                 )
             }?;
         }
