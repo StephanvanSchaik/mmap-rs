@@ -1,6 +1,8 @@
 use bitflags::bitflags;
+use crate::PageSizes;
 use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
+use crate::os_impl::unix::MmapOptions;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
