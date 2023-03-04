@@ -2,7 +2,7 @@ use mmap_rs::{Error, MmapFlags, MmapOptions};
 
 fn main() -> Result<(), Error> {
     // Allocate a single page of anonymous memory that is private and mutable.
-    let mut mapping = MmapOptions::new(MmapOptions::page_size().0)
+    let mut mapping = MmapOptions::new(MmapOptions::page_size().0)?
         .with_flags(MmapFlags::COPY_ON_WRITE)
         .map_mut()?;
 
@@ -14,6 +14,6 @@ fn main() -> Result<(), Error> {
     };
 
     println!("mapping: {:x?}", &mapping[0..4]);
-        
+
     Ok(())
 }
