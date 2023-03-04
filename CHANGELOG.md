@@ -4,8 +4,9 @@ All notable changes to mmap-rs will be documented in this file.
 
 ## 0.5.0
 
+- Updated windows crate from version 0.39 to 0.44.
 - Changed `MmapOptions::new()` to return `Result<Self, Error>` rather than `Self` to support the use of `NonZeroUsize` in nix.
-- Updated nix from version 0.24 to 0.26.
+- Updated nix crate from version 0.24 to 0.26.
 - Added support for `i686-linux-android`, `aarch64-linux-android`, `x86_64-linux-android` and `armv7-linux-androideabi`.
 - Added `MapFlags::TRANSPARENT_HUGE_PAGES` to hint the kernel that it may merge pages within the mapping into huge pages if possible when set to `madvise` mode.
 - `MmapOptions::with_flags()` appends the flags instead of overriding them.

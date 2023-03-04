@@ -278,7 +278,7 @@ impl MmapOptions {
         let file_mapping = unsafe {
             CreateFileMappingW(
                 HANDLE(file.as_raw_handle() as isize),
-                std::ptr::null_mut(),
+                None,
                 protection,
                 0,
                 0,
@@ -343,7 +343,7 @@ impl MmapOptions {
             let file_mapping = unsafe {
                 CreateFileMappingW(
                     HANDLE(file.as_raw_handle() as isize),
-                    std::ptr::null_mut(),
+                    None,
                     map_protection,
                     (match size.overflowing_shr(32) {
                         (_, true) => 0,
@@ -361,7 +361,7 @@ impl MmapOptions {
                     ((offset >> 32) & 0xffff_ffff) as u32,
                     (offset & 0xffff_ffff) as u32,
                     size,
-                    std::ptr::null(),
+                    None,
                 )
             };
 
@@ -395,8 +395,7 @@ impl MmapOptions {
             unsafe {
                 VirtualAlloc(
                     self.address
-                        .map(|address| address as *mut std::ffi::c_void)
-                        .unwrap_or(std::ptr::null_mut()),
+                        .map(|address| address as *const std::ffi::c_void),
                     size,
                     flags,
                     protection,
@@ -505,7 +504,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             let size = unsafe {
                 VirtualQueryEx(
                     self.handle,
-                    address as _,
+                    Some(address as _),
                     &mut info,
                     std::mem::size_of::<MEMORY_BASIC_INFORMATION>(),
                 )
