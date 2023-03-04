@@ -198,7 +198,7 @@ impl MmapOptions {
         })
     }
 
-    pub fn page_size() -> (usize, usize) {
+    pub fn page_size() -> usize {
         let status = sysconf(SysconfVar::PAGE_SIZE);
 
         let size = match status {
@@ -206,7 +206,11 @@ impl MmapOptions {
             _ => 4096,
         };
 
-        (size, size)
+        size
+    }
+
+    pub fn allocation_granularity() -> usize {
+        Self::page_size()
     }
 
     pub fn with_address(mut self, address: usize) -> Self {

@@ -400,12 +400,17 @@ impl MmapOptions {
         })
     }
 
-    /// Returns the smallest possible page size for the current platform as well as the allocation
-    /// granularity. On some platforms the allocation granularity may be a multiple of the page
-    /// size. The start address of the allocation must be aligned to the allocation granularity,
-    /// while the allocation size must be aligned to the page size for the allocation to succeed.
-    pub fn page_size() -> (usize, usize) {
+    /// Returns the smallest possible page size for the current platform. The allocation size must
+    /// be aligned to the page size for the allocation to succeed.
+    pub fn page_size() -> usize {
         platform::MmapOptions::page_size()
+    }
+
+    /// Returns the allocation granularity for the current platform. On some platforms the
+    /// allocation granularity may be a multiple of the page size. The start address of the
+    /// allocation must be aligned to `max(allocation_granularity, page_size)`.
+    pub fn allocation_granularity() -> usize {
+        platform::MmapOptions::allocation_granularity()
     }
 
     /// The desired address at which the memory should be mapped.

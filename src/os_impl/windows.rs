@@ -228,14 +228,24 @@ impl MmapOptions {
         })
     }
 
-    pub fn page_size() -> (usize, usize) {
+    pub fn page_size() -> usize {
         let mut system_info = SYSTEM_INFO::default();
 
         unsafe {
             GetSystemInfo(&mut system_info)
         };
 
-        (system_info.dwPageSize as usize, system_info.dwAllocationGranularity as usize)
+        system_info.dwPageSize as usize
+    }
+
+    pub fn allocation_granularity() -> usize {
+        let mut system_info = SYSTEM_INFO::default();
+
+        unsafe {
+            GetSystemInfo(&mut system_info)
+        };
+
+        system_info.dwAllocationGranularity as usize
     }
 
     pub fn with_address(mut self, address: usize) -> Self {
