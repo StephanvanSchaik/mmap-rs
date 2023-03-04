@@ -25,6 +25,10 @@ Tier 2 (builds are run in CI):
 
  * `i686-pc-windows-msvc`
  * `aarch64-pc-windows-msvc`
+ * `aarch64-linux-android`
+ * `armv7-linux-android`
+ * `x86_64-linux-android`
+ * `i686-linux-android`
  * `aarch64-apple-ios`
 
 Tier 3 (no CI, but should work):

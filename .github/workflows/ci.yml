@@ -106,6 +106,31 @@ jobs:
           cargo build
           cargo test
 
+  android:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+        - rust: 'aarch64-linux-android'
+        - rust: 'armv7-linux-android'
+        - rust: 'x86_64-linux-android'
+        - rust: 'i686-linux-android'
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+        target: ${{ matrix.target.rust }}
+    - name: Build
+      run: cargo build --target ${{ matrix.target.rust }}
+    - name: Build Examples
+      run: |
+        cargo build --target ${{ matrix.target.rust }} --examples
+
   aarch64-apple-ios:
     runs-on: macos-12
 
