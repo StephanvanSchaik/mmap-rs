@@ -114,10 +114,13 @@ bitflags! {
         const _1G   = 1 << 30;
         /// 2 GiB pages.
         const _2G   = 1 << 31;
+        #[cfg(target_pointer_width = "64")]
         /// 4 GiB pages.
         const _4G   = 1 << 32;
+        #[cfg(target_pointer_width = "64")]
         /// 8 GiB pages.
         const _8G   = 1 << 33;
+        #[cfg(target_pointer_width = "64")]
         /// 16 GiB pages.
         const _16G  = 1 << 34;
     }
