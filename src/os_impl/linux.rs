@@ -1,10 +1,12 @@
+use crate::PageSizes;
 use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
+use crate::os_impl::unix::MmapOptions;
 use combine::{
     EasyParser, Parser, Stream,
     error::ParseError,
     parser::{
-        char::hex_digit,
+        char::{digit, hex_digit, string},
         repeat::many1,
     },
     token,
@@ -14,6 +16,20 @@ use std::io::{BufRead, BufReader};
 use std::io::Lines;
 use std::ops::Range;
 use std::path::PathBuf;
+
+fn hugepage_path<Input>() -> impl Parser<Input, Output = u32>
+where
+    Input: Stream<Token = char>,
+    <Input::Error as ParseError<Input::Token, Input::Range, Input::Position>>::StreamError:
+        From<::std::num::ParseIntError>,
+{
+    (
+        string("hugepages-"),
+        many1(digit()).and_then(|s: String| usize::from_str_radix(s.as_str(), 10)),
+        string("kB"),
+    )
+        .map(|(_, size, _)| size.ilog2() + 10)
+}
 
 fn hex_digit1<Input>() -> impl Parser<Input, Output = String>
 where
@@ -116,6 +132,37 @@ where
                 path: path.map(|path| (path, offset)),
             }
         })
+}
+
+impl MmapOptions {
+    pub fn page_sizes() -> Result<PageSizes, Error> {
+        let mut sizes = 1 << Self::page_size().ilog2();
+
+        if let Ok(dir) = std::fs::read_dir("/sys/kernel/mm/hugepages") {
+            for entry in dir {
+                let entry = match entry {
+                    Ok(entry) => entry,
+                    _ => continue,
+                };
+
+                let name = match entry.file_name().into_string() {
+                    Ok(name) => name,
+                    _ => continue,
+                };
+
+                use combine::stream::position::Stream;
+
+                let size = match hugepage_path().easy_parse(Stream::new(name.as_str())) {
+                    Ok((size, _)) => size,
+                    _ => continue,
+                };
+
+                sizes |= 1 << size;
+            }
+        }
+
+        Ok(PageSizes::from_bits_truncate(sizes))
+    }
 }
 
 pub struct MemoryAreas<B> {

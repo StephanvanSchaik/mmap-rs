@@ -26,6 +26,30 @@ bitflags! {
     }
 }
 
+impl MmapOptions {
+    pub fn page_sizes() -> Result<PageSizes, Error> {
+        let mut sizes = 1 << Self::page_size().ilog2();
+
+        let count = unsafe {
+            libc::getpagesizes(std::ptr::null_mut(), 0)
+        };
+
+        let count = count.max(0) as usize;
+
+        let mut page_sizes = vec![0; count];
+
+        unsafe {
+            libc::getpagesizes(page_sizes.as_mut_ptr(), page_sizes.len() as _);
+        }
+
+        for page_size in page_sizes {
+            sizes |= 1 << page_size.ilog2();
+        }
+
+        Ok(PageSizes::from_bits_truncate(sizes))
+    }
+}
+
 pub struct MemoryAreas<B> {
     entries: Vec<libc::kinfo_vmentry>,
     index: usize,

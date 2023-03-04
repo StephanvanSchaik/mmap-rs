@@ -71,6 +71,56 @@ bitflags! {
         /// modifying and before executing the page.
         const JIT       = 1 << 1;
     }
+
+    /// A set of (supported) page sizes.
+    pub struct PageSizes: usize {
+        /// 4 KiB pages.
+        const _4K   = 1 << 12;
+        /// 8 KiB pages.
+        const _8K   = 1 << 13;
+        /// 16 KiB pages.
+        const _16K  = 1 << 14;
+        /// 32 KiB pages.
+        const _32K  = 1 << 15;
+        /// 64 KiB pages.
+        const _64K  = 1 << 16;
+        /// 128 KiB pages.
+        const _128K = 1 << 17;
+        /// 256 KiB pages.
+        const _256K = 1 << 18;
+        /// 512 KiB pages.
+        const _512K = 1 << 19;
+        /// 1 MiB pages.
+        const _1M   = 1 << 20;
+        /// 2 MiB pages.
+        const _2M   = 1 << 21;
+        /// 4 MiB pages.
+        const _4M   = 1 << 22;
+        /// 8 MiB pages.
+        const _8M   = 1 << 23;
+        /// 16 MiB pages.
+        const _16M  = 1 << 24;
+        /// 32 MiB pages.
+        const _32M = 1 << 25;
+        /// 64 MiB pages.
+        const _64M = 1 << 26;
+        /// 128 MiB pages.
+        const _128M = 1 << 27;
+        /// 256 MiB pages.
+        const _256M = 1 << 28;
+        /// 512 MiB pages.
+        const _512M = 1 << 29;
+        /// 1 GiB pages.
+        const _1G   = 1 << 30;
+        /// 2 GiB pages.
+        const _2G   = 1 << 31;
+        /// 4 GiB pages.
+        const _4G   = 1 << 32;
+        /// 8 GiB pages.
+        const _8G   = 1 << 33;
+        /// 16 GiB pages.
+        const _16G  = 1 << 34;
+    }
 }
 
 /// The preferred size of the pages uses, where the size is in log2 notation.
@@ -108,6 +158,18 @@ impl PageSize {
     pub const _2G:   Self = Self(31);
     /// Map the mapping using 16 GiB pages.
     pub const _16G:  Self = Self(34);
+}
+
+impl TryInto<PageSize> for PageSizes {
+    type Error = Error;
+
+    fn try_into(self) -> Result<PageSize, Error> {
+        if self.bits().count_ones() != 1 {
+            return Err(Error::InvalidSize);
+        }
+
+        Ok(PageSize(self.bits()))
+    }
 }
 
 macro_rules! mmap_impl {
@@ -404,6 +466,11 @@ impl MmapOptions {
     /// be aligned to the page size for the allocation to succeed.
     pub fn page_size() -> usize {
         platform::MmapOptions::page_size()
+    }
+
+    /// Returns the set of supported page sizes for the current platform.
+    pub fn page_sizes() -> Result<PageSizes, Error> {
+        platform::MmapOptions::page_sizes()
     }
 
     /// Returns the allocation granularity for the current platform. On some platforms the

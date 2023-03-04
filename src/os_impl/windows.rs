@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use crate::areas::{MemoryArea, Protection, ShareMode};
-use crate::mmap::{MmapFlags, PageSize, UnsafeMmapFlags};
+use crate::mmap::{MmapFlags, PageSize, PageSizes, UnsafeMmapFlags};
 use crate::error::Error;
 use std::fs::File;
 use std::ops::Range;
@@ -236,6 +236,18 @@ impl MmapOptions {
         };
 
         system_info.dwPageSize as usize
+    }
+
+    pub fn page_sizes() -> Result<PageSizes, Error> {
+        let mut sizes = 1 << Self::page_size().ilog2();
+
+        let size = unsafe { GetLargePageMinimum() };
+
+        if size != 0 {
+            sizes |= 1 << size.ilog2();
+        }
+
+        Ok(PageSizes::from_bits_truncate(sizes))
     }
 
     pub fn allocation_granularity() -> usize {

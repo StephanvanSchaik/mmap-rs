@@ -4,6 +4,7 @@ All notable changes to mmap-rs will be documented in this file.
 
 ## 0.5.0
 
+- Implement `MmapOptions::page_sizes()` to return the supported page sizes for the platform.
 - Separate the functions to get the page size and the allocation granularity.
 - Updated windows crate from version 0.39 to 0.44.
 - Changed `MmapOptions::new()` to return `Result<Self, Error>` rather than `Self` to support the use of `NonZeroUsize` in nix.
