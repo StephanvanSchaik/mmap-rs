@@ -93,7 +93,7 @@ impl Mmap {
 
         let status = unsafe {
             FlushViewOfFile(
-                self.ptr.offset(range.start as isize) as *const std::ffi::c_void,
+                self.ptr.add(range.start) as *const std::ffi::c_void,
                 range.end - range.start,
             )
         }
@@ -508,7 +508,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
                 return None;
             }
 
-            let size = info.RegionSize as usize;
+            let size = info.RegionSize;
             let start = info.BaseAddress as usize;
             let end = start + size;
             let range = start..end;
