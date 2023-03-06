@@ -17,6 +17,7 @@ use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
 use std::path::Path;
 
+#[derive(Debug)]
 pub struct MemoryAreas<B> {
     pid: u32,
     task: mach_port_name_t,

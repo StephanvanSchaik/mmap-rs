@@ -1,5 +1,6 @@
 use crate::error::Error;
 use bitflags::bitflags;
+use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::ops::Range;
@@ -100,6 +101,12 @@ impl MemoryArea {
 /// The memory areas of the process.
 pub struct MemoryAreas<B> {
     inner: platform::MemoryAreas<B>,
+}
+
+impl<B> fmt::Debug for MemoryAreas<B> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MemoryAreas").finish_non_exhaustive()
+    }
 }
 
 impl MemoryAreas<BufReader<File>> {

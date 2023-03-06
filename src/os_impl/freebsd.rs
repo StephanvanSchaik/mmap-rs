@@ -50,6 +50,7 @@ impl MmapOptions {
     }
 }
 
+#[derive(Debug)]
 pub struct MemoryAreas<B> {
     entries: Vec<libc::kinfo_vmentry>,
     index: usize,

@@ -332,6 +332,7 @@ macro_rules! mmap_impl {
 }
 
 /// Represents an inaccessible memory mapping.
+#[derive(Debug)]
 pub struct MmapNone {
     inner: platform::Mmap,
 }
@@ -339,6 +340,7 @@ pub struct MmapNone {
 mmap_impl!(MmapNone);
 
 /// Represents an immutable memory mapping.
+#[derive(Debug)]
 pub struct Mmap {
     inner: platform::Mmap,
 }
@@ -370,6 +372,7 @@ impl AsRef<[u8]> for Mmap {
 }
 
 /// Represents a mutable memory mapping.
+#[derive(Debug)]
 pub struct MmapMut {
     inner: platform::Mmap,
 }
@@ -427,6 +430,7 @@ impl AsMut<[u8]> for MmapMut {
 }
 
 /// Represents the options for the memory mapping.
+#[derive(Debug)]
 pub struct MmapOptions {
     inner: platform::MmapOptions,
 }
