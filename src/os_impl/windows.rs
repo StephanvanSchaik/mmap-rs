@@ -1,7 +1,7 @@
-use bitflags::bitflags;
 use crate::areas::{MemoryArea, Protection, ShareMode};
-use crate::mmap::{MmapFlags, PageSize, PageSizes, UnsafeMmapFlags};
 use crate::error::Error;
+use crate::mmap::{MmapFlags, PageSize, PageSizes, UnsafeMmapFlags};
+use bitflags::bitflags;
 use std::fs::File;
 use std::ops::Range;
 use std::os::windows::io::AsRawHandle;
@@ -13,7 +13,7 @@ use windows::Win32::System::Diagnostics::Debug::FlushInstructionCache;
 use windows::Win32::System::Memory::*;
 use windows::Win32::System::ProcessStatus::K32GetMappedFileNameW;
 use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
-use windows::Win32::System::Threading::{PROCESS_ALL_ACCESS, GetCurrentProcess, OpenProcess};
+use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcess, PROCESS_ALL_ACCESS};
 
 bitflags! {
     struct Flags: u32 {
@@ -54,12 +54,8 @@ impl Mmap {
     }
 
     pub fn lock(&mut self) -> Result<(), Error> {
-        let status = unsafe {
-            VirtualLock(
-                self.ptr as *const std::ffi::c_void,
-                self.size,
-            )
-        }.as_bool();
+        let status =
+            unsafe { VirtualLock(self.ptr as *const std::ffi::c_void, self.size) }.as_bool();
 
         if !status {
             return Err(std::io::Error::last_os_error())?;
@@ -69,12 +65,8 @@ impl Mmap {
     }
 
     pub fn unlock(&mut self) -> Result<(), Error> {
-        let status = unsafe {
-            VirtualUnlock(
-                self.ptr as *const std::ffi::c_void,
-                self.size,
-            )
-        }.as_bool();
+        let status =
+            unsafe { VirtualUnlock(self.ptr as *const std::ffi::c_void, self.size) }.as_bool();
 
         if !status {
             return Err(std::io::Error::last_os_error())?;
@@ -103,7 +95,8 @@ impl Mmap {
                 self.ptr.offset(range.start as isize) as *const std::ffi::c_void,
                 range.end - range.start,
             )
-        }.as_bool();
+        }
+        .as_bool();
 
         if !status {
             return Err(std::io::Error::last_os_error())?;
@@ -121,11 +114,12 @@ impl Mmap {
                 self.size,
                 protect,
                 &mut old_protect,
-            ).as_bool()
+            )
+            .as_bool()
         };
 
-       if !status {
-           return Err(std::io::Error::last_os_error())?;
+        if !status {
+            return Err(std::io::Error::last_os_error())?;
         }
 
         Ok(())
@@ -189,11 +183,7 @@ impl Mmap {
 impl Drop for Mmap {
     fn drop(&mut self) {
         if self.file.is_some() {
-            let _ = unsafe {
-                UnmapViewOfFile(
-                    self.ptr as *mut _,
-                )
-            };
+            let _ = unsafe { UnmapViewOfFile(self.ptr as *mut _) };
         } else {
             let _ = unsafe {
                 VirtualFree(
@@ -231,9 +221,7 @@ impl MmapOptions {
     pub fn page_size() -> usize {
         let mut system_info = SYSTEM_INFO::default();
 
-        unsafe {
-            GetSystemInfo(&mut system_info)
-        };
+        unsafe { GetSystemInfo(&mut system_info) };
 
         system_info.dwPageSize as usize
     }
@@ -253,9 +241,7 @@ impl MmapOptions {
     pub fn allocation_granularity() -> usize {
         let mut system_info = SYSTEM_INFO::default();
 
-        unsafe {
-            GetSystemInfo(&mut system_info)
-        };
+        unsafe { GetSystemInfo(&mut system_info) };
 
         system_info.dwAllocationGranularity as usize
     }
@@ -319,11 +305,7 @@ impl MmapOptions {
         }
 
         // We could create the file mapping, now close the handle and return true.
-        unsafe {
-            CloseHandle(
-                file_mapping,
-            )
-        };
+        unsafe { CloseHandle(file_mapping) };
 
         true
     }
@@ -387,20 +369,12 @@ impl MmapOptions {
                 )
             };
 
-            unsafe {
-                CloseHandle(file_mapping)
-            };
+            unsafe { CloseHandle(file_mapping) };
 
             let mut old_protect = PAGE_PROTECTION_FLAGS::default();
 
-            let status = unsafe {
-                VirtualProtect(
-                    ptr,
-                    size,
-                    protection,
-                    &mut old_protect,
-                )
-            }.as_bool();
+            let status =
+                unsafe { VirtualProtect(ptr, size, protection, &mut old_protect) }.as_bool();
 
             if !status {
                 return Err(std::io::Error::last_os_error())?;
@@ -498,11 +472,7 @@ pub struct MemoryAreas<B> {
 impl MemoryAreas<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
         let handle = match pid {
-            Some(id) => unsafe { OpenProcess(
-                PROCESS_ALL_ACCESS,
-                false,
-                id,
-            ) }?,
+            Some(id) => unsafe { OpenProcess(PROCESS_ALL_ACCESS, false, id) }?,
             _ => unsafe { GetCurrentProcess() },
         };
 
@@ -548,8 +518,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             }
 
             let copy_on_write =
-                info.Protect == PAGE_EXECUTE_WRITECOPY ||
-                info.Protect == PAGE_WRITECOPY;
+                info.Protect == PAGE_EXECUTE_WRITECOPY || info.Protect == PAGE_WRITECOPY;
 
             let share_mode = if info.Type & MEM_PRIVATE == MEM_PRIVATE {
                 ShareMode::Private
@@ -560,30 +529,20 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             };
 
             let protection = match info.Protect {
-                PAGE_EXECUTE =>
-                    Protection::EXECUTE,
-                PAGE_EXECUTE_READ =>
-                    Protection::READ | Protection::EXECUTE,
-                PAGE_EXECUTE_READWRITE |
-                PAGE_EXECUTE_WRITECOPY =>
-                    Protection::READ | Protection::WRITE | Protection::EXECUTE,
-                PAGE_READONLY =>
-                    Protection::READ,
-                PAGE_READWRITE |
-                PAGE_WRITECOPY =>
-                    Protection::READ | Protection::WRITE,
-                _ =>
-                    Protection::empty(),
+                PAGE_EXECUTE => Protection::EXECUTE,
+                PAGE_EXECUTE_READ => Protection::READ | Protection::EXECUTE,
+                PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY => {
+                    Protection::READ | Protection::WRITE | Protection::EXECUTE
+                }
+                PAGE_READONLY => Protection::READ,
+                PAGE_READWRITE | PAGE_WRITECOPY => Protection::READ | Protection::WRITE,
+                _ => Protection::empty(),
             };
 
             let mut name = vec![0u16; MAX_PATH as usize];
 
             let name_size = unsafe {
-                K32GetMappedFileNameW(
-                    self.handle,
-                    address as *const std::ffi::c_void,
-                    &mut name,
-                )
+                K32GetMappedFileNameW(self.handle, address as *const std::ffi::c_void, &mut name)
             };
 
             let path = if name_size != 0 {

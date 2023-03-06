@@ -1,5 +1,5 @@
-use bitflags::bitflags;
 use crate::error::Error;
+use bitflags::bitflags;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::ops::Range;
@@ -108,9 +108,7 @@ impl MemoryAreas<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
         let inner = platform::MemoryAreas::open(pid)?;
 
-        Ok(Self {
-            inner,
-        })
+        Ok(Self { inner })
     }
 }
 

@@ -1,19 +1,18 @@
-use crate::PageSizes;
 use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
 use crate::os_impl::unix::MmapOptions;
+use crate::PageSizes;
 use combine::{
-    EasyParser, Parser, Stream,
     error::ParseError,
     parser::{
         char::{digit, hex_digit, string},
         repeat::many1,
     },
-    token,
+    token, EasyParser, Parser, Stream,
 };
 use std::fs::File;
-use std::io::{BufRead, BufReader};
 use std::io::Lines;
+use std::io::{BufRead, BufReader};
 use std::ops::Range;
 use std::path::PathBuf;
 
@@ -56,16 +55,25 @@ fn permissions<Input>() -> impl Parser<Input, Output = (Protection, ShareMode)>
 where
     Input: Stream<Token = char>,
 {
-    use combine::parser::{
-        char::char,
-        choice::or,
-    };
+    use combine::parser::{char::char, choice::or};
 
     (
-        or(char('r').map(|_| Protection::READ), char('-').map(|_| Protection::empty())),
-        or(char('w').map(|_| Protection::WRITE), char('-').map(|_| Protection::empty())),
-        or(char('x').map(|_| Protection::EXECUTE), char('-').map(|_| Protection::empty())),
-        or(char('s').map(|_| ShareMode::Shared), char('p').map(|_| ShareMode::Private)),
+        or(
+            char('r').map(|_| Protection::READ),
+            char('-').map(|_| Protection::empty()),
+        ),
+        or(
+            char('w').map(|_| Protection::WRITE),
+            char('-').map(|_| Protection::empty()),
+        ),
+        or(
+            char('x').map(|_| Protection::EXECUTE),
+            char('-').map(|_| Protection::empty()),
+        ),
+        or(
+            char('s').map(|_| ShareMode::Shared),
+            char('p').map(|_| ShareMode::Private),
+        ),
     )
         .map(|(r, w, x, s)| (r | w | x, s))
 }
@@ -90,8 +98,7 @@ where
 {
     use combine::parser::token::satisfy;
 
-    many1(satisfy(|c| c != '\n'))
-        .map(|s: String| PathBuf::from(s))
+    many1(satisfy(|c| c != '\n')).map(|s: String| PathBuf::from(s))
 }
 
 fn memory_region<Input>() -> impl Parser<Input, Output = MemoryArea>
@@ -100,10 +107,7 @@ where
     <Input::Error as ParseError<Input::Token, Input::Range, Input::Position>>::StreamError:
         From<::std::num::ParseIntError>,
 {
-    use combine::parser::{
-        char::spaces,
-        choice::optional,
-    };
+    use combine::parser::{char::spaces, choice::optional};
 
     (
         address_range(),
@@ -118,20 +122,22 @@ where
         spaces(),
         optional(path()),
     )
-        .map(|(range, _, (protection, share_mode), _, offset, _, _, _, _, _, path)| {
-            let share_mode = if path.is_some() && share_mode == ShareMode::Private {
-                ShareMode::CopyOnWrite
-            } else {
-                share_mode
-            };
+        .map(
+            |(range, _, (protection, share_mode), _, offset, _, _, _, _, _, path)| {
+                let share_mode = if path.is_some() && share_mode == ShareMode::Private {
+                    ShareMode::CopyOnWrite
+                } else {
+                    share_mode
+                };
 
-            MemoryArea {
-                range,
-                protection,
-                share_mode,
-                path: path.map(|path| (path, offset)),
-            }
-        })
+                MemoryArea {
+                    range,
+                    protection,
+                    share_mode,
+                    path: path.map(|path| (path, offset)),
+                }
+            },
+        )
 }
 
 impl MmapOptions {
@@ -180,9 +186,7 @@ impl MemoryAreas<BufReader<File>> {
         let reader = BufReader::new(file);
         let lines = reader.lines();
 
-        Ok(Self {
-            lines,
-        })
+        Ok(Self { lines })
     }
 }
 

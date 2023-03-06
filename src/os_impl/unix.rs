@@ -1,6 +1,6 @@
-use bitflags::bitflags;
-use crate::{MmapFlags, PageSize, UnsafeMmapFlags};
 use crate::error::Error;
+use crate::{MmapFlags, PageSize, UnsafeMmapFlags};
+use bitflags::bitflags;
 use nix::sys::mman::*;
 use nix::unistd::*;
 use std::fs::File;
@@ -61,10 +61,7 @@ impl Mmap {
 
     pub fn lock(&mut self) -> Result<(), Error> {
         unsafe {
-            mlock(
-                self.ptr as *const std::ffi::c_void,
-                self.size,
-            )?;
+            mlock(self.ptr as *const std::ffi::c_void, self.size)?;
         }
 
         Ok(())
@@ -72,10 +69,7 @@ impl Mmap {
 
     pub fn unlock(&mut self) -> Result<(), Error> {
         unsafe {
-            munlock(
-                self.ptr as *const std::ffi::c_void,
-                self.size,
-            )?;
+            munlock(self.ptr as *const std::ffi::c_void, self.size)?;
         }
 
         Ok(())
@@ -107,12 +101,7 @@ impl Mmap {
 
     #[cfg(target_os = "ios")]
     pub fn flush_icache(&self) -> Result<(), Error> {
-        unsafe {
-            sys_icache_invalidate(
-                self.ptr as *mut std::ffi::c_void,
-                self.size as usize,
-            )
-        };
+        unsafe { sys_icache_invalidate(self.ptr as *mut std::ffi::c_void, self.size as usize) };
 
         Ok(())
     }
@@ -130,15 +119,11 @@ impl Mmap {
     }
 
     fn do_make(&self, protect: ProtFlags) -> Result<(), Error> {
-        let ptr  = self.ptr as *const u8;
+        let ptr = self.ptr as *const u8;
         let size = self.size;
 
         unsafe {
-            mprotect(
-                ptr as *mut std::ffi::c_void,
-                size,
-                protect,
-            )?;
+            mprotect(ptr as *mut std::ffi::c_void, size, protect)?;
         }
 
         Ok(())
@@ -171,12 +156,7 @@ impl Mmap {
 
 impl Drop for Mmap {
     fn drop(&mut self) {
-        let _ = unsafe {
-            munmap(
-                self.ptr as *mut _,
-                self.size,
-            )
-        };
+        let _ = unsafe { munmap(self.ptr as *mut _, self.size) };
     }
 }
 
@@ -281,18 +261,18 @@ impl MmapOptions {
             flags |= MapFlags::MAP_HUGETLB;
 
             flags |= match page_size {
-                PageSize::_64K  => MapFlags::MAP_HUGE_64KB,
+                PageSize::_64K => MapFlags::MAP_HUGE_64KB,
                 PageSize::_512K => MapFlags::MAP_HUGE_512KB,
-                PageSize::_1M   => MapFlags::MAP_HUGE_1MB,
-                PageSize::_2M   => MapFlags::MAP_HUGE_2MB,
-                PageSize::_8M   => MapFlags::MAP_HUGE_8MB,
-                PageSize::_16M  => MapFlags::MAP_HUGE_16MB,
-                PageSize::_32M  => MapFlags::MAP_HUGE_32MB,
+                PageSize::_1M => MapFlags::MAP_HUGE_1MB,
+                PageSize::_2M => MapFlags::MAP_HUGE_2MB,
+                PageSize::_8M => MapFlags::MAP_HUGE_8MB,
+                PageSize::_16M => MapFlags::MAP_HUGE_16MB,
+                PageSize::_32M => MapFlags::MAP_HUGE_32MB,
                 PageSize::_256M => MapFlags::MAP_HUGE_256MB,
                 PageSize::_512M => MapFlags::MAP_HUGE_512MB,
-                PageSize::_1G   => MapFlags::MAP_HUGE_1GB,
-                PageSize::_2G   => MapFlags::MAP_HUGE_2GB,
-                PageSize::_16G  => MapFlags::MAP_HUGE_16GB,
+                PageSize::_1G => MapFlags::MAP_HUGE_1GB,
+                PageSize::_2G => MapFlags::MAP_HUGE_2GB,
+                PageSize::_16G => MapFlags::MAP_HUGE_16GB,
                 _ => MapFlags::empty(),
             };
         }
@@ -312,7 +292,13 @@ impl MmapOptions {
             flags |= MapFlags::MAP_WIRED;
         }
 
-        #[cfg(any(target_os = "android", target_os = "dragonfly", target_os = "freebsd", target_os = "linux", target_os = "openbsd"))]
+        #[cfg(any(
+            target_os = "android",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "linux",
+            target_os = "openbsd"
+        ))]
         if self.flags.contains(MmapFlags::STACK) {
             flags |= MapFlags::MAP_STACK;
         }
@@ -338,7 +324,9 @@ impl MmapOptions {
         let size = self.size;
         let ptr = unsafe {
             mmap(
-                self.address.map(|address| NonZeroUsize::new(address)).flatten(),
+                self.address
+                    .map(|address| NonZeroUsize::new(address))
+                    .flatten(),
                 size,
                 protect,
                 self.flags(),
@@ -355,45 +343,22 @@ impl MmapOptions {
 
         #[cfg(any(target_os = "android", target_os = "linux"))]
         if self.flags.contains(MmapFlags::NO_CORE_DUMP) {
-            unsafe {
-                madvise(
-                    ptr,
-                    size.get(),
-                    MmapAdvise::MADV_DONTDUMP,
-                )
-            }?;
+            unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_DONTDUMP) }?;
         }
 
         #[cfg(any(target_os = "android", target_os = "linux"))]
         if self.flags.contains(MmapFlags::TRANSPARENT_HUGE_PAGES) {
-            unsafe {
-                madvise(
-                    ptr,
-                    size.get(),
-                    MmapAdvise::MADV_HUGEPAGE,
-                )
-            }?;
+            unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_HUGEPAGE) }?;
         }
 
         #[cfg(any(target_os = "dragonfly", target_os = "freebsd"))]
         if self.flags.contains(MmapFlags::NO_CORE_DUMP) {
-            unsafe {
-                madvise(
-                    ptr,
-                    size.get(),
-                    MmapAdvise::MADV_NOCORE,
-                )
-            }?;
+            unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_NOCORE) }?;
         }
 
         #[cfg(not(any(target_os = "android", target_os = "linux", target_os = "netbsd")))]
         if self.flags.contains(MmapFlags::LOCKED) {
-            unsafe {
-                mlock(
-                    ptr,
-                    size.get(),
-                )
-            }?;
+            unsafe { mlock(ptr, size.get()) }?;
         }
 
         let mut flags = Flags::empty();

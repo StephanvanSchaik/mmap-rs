@@ -8,7 +8,7 @@ use mach2::{
     vm::mach_vm_region,
     vm_prot::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE},
     vm_region::VM_REGION_BASIC_INFO_64,
-    vm_region::{vm_region_info_t, vm_region_basic_info_64},
+    vm_region::{vm_region_basic_info_64, vm_region_info_t},
     vm_types::mach_vm_address_t,
 };
 use nix::unistd::getpid;
@@ -26,18 +26,10 @@ pub struct MemoryAreas<B> {
 
 impl MemoryAreas<BufReader<File>> {
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
-        let task = unsafe {
-            mach_task_self()
-        };
+        let task = unsafe { mach_task_self() };
 
         if let Some(pid) = pid {
-            let result = unsafe {
-                task_for_pid(
-                    task,
-                    pid as i32,
-                    std::mem::transmute(&task),
-                )
-            };
+            let result = unsafe { task_for_pid(task, pid as i32, std::mem::transmute(&task)) };
 
             if result != KERN_SUCCESS {
                 return Err(Error::Mach(result));

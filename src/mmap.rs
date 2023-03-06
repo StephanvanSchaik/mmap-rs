@@ -1,5 +1,5 @@
-use bitflags::bitflags;
 use crate::error::Error;
+use bitflags::bitflags;
 use std::fs::File;
 use std::ops::{Deref, DerefMut, Range};
 
@@ -134,33 +134,33 @@ pub struct PageSize(pub usize);
 
 impl PageSize {
     /// Map the mapping using 4 KiB pages.
-    pub const _4K:   Self = Self(12);
+    pub const _4K: Self = Self(12);
     /// Map the mapping using 64 KiB pages.
-    pub const _64K:  Self = Self(16);
+    pub const _64K: Self = Self(16);
     /// Map the mapping using 512 KiB pages.
     pub const _512K: Self = Self(19);
     /// Map the mapping using 1 MiB pages.
-    pub const _1M:   Self = Self(20);
+    pub const _1M: Self = Self(20);
     /// Map the mapping using 2 MiB pages.
-    pub const _2M:   Self = Self(21);
+    pub const _2M: Self = Self(21);
     /// Map the mapping using 4 MiB pages.
-    pub const _4M:   Self = Self(22);
+    pub const _4M: Self = Self(22);
     /// Map the mapping using 8 MiB pages.
-    pub const _8M:   Self = Self(23);
+    pub const _8M: Self = Self(23);
     /// Map the mapping using 16 MiB pages.
-    pub const _16M:  Self = Self(24);
+    pub const _16M: Self = Self(24);
     /// Map the mapping using 32 MiB pages.
-    pub const _32M:  Self = Self(25);
+    pub const _32M: Self = Self(25);
     /// Map the mapping using 256 MiB pages.
     pub const _256M: Self = Self(28);
     /// Map the mapping using 512 MiB pages.
     pub const _512M: Self = Self(29);
     /// Map the mapping using 1 GiB pages.
-    pub const _1G:   Self = Self(30);
+    pub const _1G: Self = Self(30);
     /// Map the mapping using 2 GiB pages.
-    pub const _2G:   Self = Self(31);
+    pub const _2G: Self = Self(31);
     /// Map the mapping using 16 GiB pages.
-    pub const _16G:  Self = Self(34);
+    pub const _16G: Self = Self(34);
 }
 
 impl TryInto<PageSize> for PageSizes {
@@ -238,9 +238,7 @@ macro_rules! mmap_impl {
                     return Err((self, e));
                 }
 
-                Ok(MmapNone {
-                    inner: self.inner,
-                })
+                Ok(MmapNone { inner: self.inner })
             }
 
             /// Remaps this memory mapping as immutable.
@@ -251,9 +249,7 @@ macro_rules! mmap_impl {
                     return Err((self, e));
                 }
 
-                Ok(Mmap {
-                    inner: self.inner,
-                })
+                Ok(Mmap { inner: self.inner })
             }
 
             /// Remaps this memory mapping as executable.
@@ -268,9 +264,7 @@ macro_rules! mmap_impl {
                     return Err((self, e));
                 }
 
-                Ok(Mmap {
-                    inner: self.inner,
-                })
+                Ok(Mmap { inner: self.inner })
             }
 
             /// Remaps this memory mapping as executable, but does not flush the instruction cache.
@@ -288,11 +282,8 @@ macro_rules! mmap_impl {
                     return Err((self, e));
                 }
 
-                Ok(Mmap {
-                    inner: self.inner,
-                })
+                Ok(Mmap { inner: self.inner })
             }
-
 
             /// Remaps this mapping to be mutable.
             ///
@@ -302,9 +293,7 @@ macro_rules! mmap_impl {
                     return Err((self, e));
                 }
 
-                Ok(MmapMut {
-                    inner: self.inner,
-                })
+                Ok(MmapMut { inner: self.inner })
             }
 
             /// Remaps this mapping to be executable and mutable.
@@ -336,12 +325,10 @@ macro_rules! mmap_impl {
                     return Err((self, e));
                 }
 
-                Ok(MmapMut {
-                    inner: self.inner,
-                })
+                Ok(MmapMut { inner: self.inner })
             }
         }
-    }
+    };
 }
 
 /// Represents an inaccessible memory mapping.
@@ -372,17 +359,13 @@ impl Deref for Mmap {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        unsafe {
-            std::slice::from_raw_parts(self.as_ptr(), self.size())
-        }
+        unsafe { std::slice::from_raw_parts(self.as_ptr(), self.size()) }
     }
 }
 
 impl AsRef<[u8]> for Mmap {
     fn as_ref(&self) -> &[u8] {
-        unsafe {
-            std::slice::from_raw_parts(self.as_ptr(), self.size())
-        }
+        unsafe { std::slice::from_raw_parts(self.as_ptr(), self.size()) }
     }
 }
 
@@ -421,33 +404,25 @@ impl Deref for MmapMut {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        unsafe {
-            std::slice::from_raw_parts(self.as_ptr(), self.size())
-        }
+        unsafe { std::slice::from_raw_parts(self.as_ptr(), self.size()) }
     }
 }
 
 impl DerefMut for MmapMut {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe {
-            std::slice::from_raw_parts_mut(self.as_mut_ptr(), self.size())
-        }
+        unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr(), self.size()) }
     }
 }
 
 impl AsRef<[u8]> for MmapMut {
     fn as_ref(&self) -> &[u8] {
-        unsafe {
-            std::slice::from_raw_parts(self.as_ptr(), self.size())
-        }
+        unsafe { std::slice::from_raw_parts(self.as_ptr(), self.size()) }
     }
 }
 
 impl AsMut<[u8]> for MmapMut {
     fn as_mut(&mut self) -> &mut [u8] {
-        unsafe {
-            std::slice::from_raw_parts_mut(self.as_mut_ptr(), self.size())
-        }
+        unsafe { std::slice::from_raw_parts_mut(self.as_mut_ptr(), self.size()) }
     }
 }
 
