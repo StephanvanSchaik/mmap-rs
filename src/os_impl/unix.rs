@@ -79,7 +79,7 @@ impl Mmap {
     pub fn flush(&self, range: Range<usize>) -> Result<(), Error> {
         unsafe {
             msync(
-                self.ptr.offset(range.start as isize) as *mut std::ffi::c_void,
+                self.ptr.add(range.start) as *mut std::ffi::c_void,
                 range.end - range.start,
                 MsFlags::MS_SYNC,
             )
@@ -91,7 +91,7 @@ impl Mmap {
     pub fn flush_async(&self, range: Range<usize>) -> Result<(), Error> {
         unsafe {
             msync(
-                self.ptr.offset(range.start as isize) as *mut std::ffi::c_void,
+                self.ptr.add(range.start) as *mut std::ffi::c_void,
                 range.end - range.start,
                 MsFlags::MS_ASYNC,
             )
@@ -112,7 +112,7 @@ impl Mmap {
         unsafe {
             __clear_cache(
                 self.ptr as *mut std::ffi::c_void,
-                self.ptr.offset(self.size as isize) as *mut std::ffi::c_void,
+                self.ptr.add(self.size) as *mut std::ffi::c_void,
             )
         };
 
@@ -186,12 +186,10 @@ impl MmapOptions {
     pub fn page_size() -> usize {
         let status = sysconf(SysconfVar::PAGE_SIZE);
 
-        let size = match status {
+        match status {
             Ok(Some(page_size)) => page_size as usize,
             _ => 4096,
-        };
-
-        size
+        }
     }
 
     #[cfg(not(any(target_os = "android", target_os = "freebsd", target_os = "linux")))]
@@ -326,9 +324,7 @@ impl MmapOptions {
         let size = self.size;
         let ptr = unsafe {
             mmap(
-                self.address
-                    .map(|address| NonZeroUsize::new(address))
-                    .flatten(),
+                self.address.and_then(NonZeroUsize::new),
                 size,
                 protect,
                 self.flags(),

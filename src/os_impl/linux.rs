@@ -24,7 +24,7 @@ where
 {
     (
         string("hugepages-"),
-        many1(digit()).and_then(|s: String| usize::from_str_radix(s.as_str(), 10)),
+        many1(digit()).and_then(|s: String| s.parse::<usize>()),
         string("kB"),
     )
         .map(|(_, size, _)| size.ilog2() + 10)

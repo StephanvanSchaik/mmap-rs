@@ -35,7 +35,7 @@ fn main() -> Result<(), Error> {
                 area.file_offset().unwrap_or(0),
                 area.path()
                     .map(|path| path.display().to_string())
-                    .unwrap_or(String::new()),
+                    .unwrap_or_default(),
             ),
         );
     }
