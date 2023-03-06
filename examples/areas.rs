@@ -6,7 +6,8 @@ fn main() -> Result<(), Error> {
     for area in maps {
         let area = area?;
 
-        println!("{:x}-{:x} {}{}{}{}{}",
+        println!(
+            "{:x}-{:x} {}{}{}{}{}",
             area.start(),
             area.end(),
             if area.protection().contains(Protection::READ) {
@@ -29,9 +30,12 @@ fn main() -> Result<(), Error> {
             } else {
                 "p"
             },
-            format!(" {:x} {}",
+            format!(
+                " {:x} {}",
                 area.file_offset().unwrap_or(0),
-                area.path().map(|path| path.display().to_string()).unwrap_or(String::new()),
+                area.path()
+                    .map(|path| path.display().to_string())
+                    .unwrap_or(String::new()),
             ),
         );
     }

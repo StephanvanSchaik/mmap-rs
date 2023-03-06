@@ -1,8 +1,8 @@
-use bitflags::bitflags;
-use crate::PageSizes;
 use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
 use crate::os_impl::unix::MmapOptions;
+use crate::PageSizes;
+use bitflags::bitflags;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
@@ -32,9 +32,7 @@ impl MmapOptions {
     pub fn page_sizes() -> Result<PageSizes, Error> {
         let mut sizes = 1 << Self::page_size().ilog2();
 
-        let count = unsafe {
-            libc::getpagesizes(std::ptr::null_mut(), 0)
-        };
+        let count = unsafe { libc::getpagesizes(std::ptr::null_mut(), 0) };
 
         let count = count.max(0) as usize;
 
@@ -67,13 +65,9 @@ impl MemoryAreas<BufReader<File>> {
         };
 
         let mut count = 0;
-        let entries_ptr = unsafe {
-            libc::kinfo_getvmmap(pid, &mut count)
-        };
+        let entries_ptr = unsafe { libc::kinfo_getvmmap(pid, &mut count) };
 
-        let entries = unsafe {
-            core::slice::from_raw_parts(entries_ptr, count as usize)
-        }.to_vec();
+        let entries = unsafe { core::slice::from_raw_parts(entries_ptr, count as usize) }.to_vec();
 
         unsafe {
             libc::free(entries_ptr as *mut core::ffi::c_void);
@@ -127,7 +121,12 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
         let offset = entry.kve_offset;
 
         // Parse the path.
-        let path: Vec<u8> = entry.kve_path.iter().flatten().map(|byte| *byte as u8).collect();
+        let path: Vec<u8> = entry
+            .kve_path
+            .iter()
+            .flatten()
+            .map(|byte| *byte as u8)
+            .collect();
 
         let last = match path.iter().position(|&c| c == 0) {
             Some(end) => end,
