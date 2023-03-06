@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![deny(missing_docs, rustdoc::broken_intra_doc_links)]
+#![deny(missing_docs, rustdoc::broken_intra_doc_links, missing_debug_implementations )]
 
 mod areas;
 pub mod error;

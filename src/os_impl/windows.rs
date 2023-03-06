@@ -22,6 +22,7 @@ bitflags! {
     }
 }
 
+#[derive(Debug)]
 pub struct Mmap {
     file: Option<File>,
     ptr: *mut u8,
@@ -197,6 +198,7 @@ impl Drop for Mmap {
     }
 }
 
+#[derive(Debug)]
 pub struct MmapOptions {
     address: Option<usize>,
     file: Option<(File, u64)>,
