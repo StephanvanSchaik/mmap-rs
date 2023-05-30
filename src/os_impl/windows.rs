@@ -19,6 +19,7 @@ bitflags! {
     struct Flags: u32 {
         const COPY_ON_WRITE = 1 << 0;
         const JIT           = 1 << 1;
+        const DONT_COMMIT   = 1 << 2;
     }
 }
 
@@ -178,6 +179,24 @@ impl Mmap {
         };
 
         self.do_make(protect)
+    }
+
+    pub fn commit(&self, range: std::ops::Range<usize>) -> Result<(), Error> {
+        if self.flags.contains(Flags::DONT_COMMIT) {
+            let status = unsafe {
+                VirtualAlloc(
+                    Some(self.ptr.add(range.start) as *mut std::ffi::c_void),
+                    range.end - range.start,
+                    MEM_COMMIT,
+                    PAGE_READWRITE,
+                ) != std::ptr::null_mut()
+            };
+            if !status {
+                return Err(std::io::Error::last_os_error())?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -384,7 +403,11 @@ impl MmapOptions {
 
             ptr
         } else {
-            let mut flags = MEM_COMMIT | MEM_RESERVE;
+            let mut flags = MEM_RESERVE;
+
+            if !self.unsafe_flags.contains(UnsafeMmapFlags::DONT_COMMIT) {
+                flags |= MEM_COMMIT;
+            }
 
             if self.flags.contains(MmapFlags::HUGE_PAGES) {
                 flags |= MEM_LARGE_PAGES;
@@ -415,6 +438,10 @@ impl MmapOptions {
 
         if self.unsafe_flags.contains(UnsafeMmapFlags::JIT) {
             flags |= Flags::JIT;
+        }
+
+        if self.unsafe_flags.contains(UnsafeMmapFlags::DONT_COMMIT) {
+            flags |= Flags::DONT_COMMIT;
         }
 
         Ok(Mmap {

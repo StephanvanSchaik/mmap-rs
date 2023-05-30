@@ -47,7 +47,7 @@ bitflags! {
         /// mapped at that address range.
         ///
         /// This is not supported on Microsoft Windows.
-        const MAP_FIXED = 1 << 0;
+        const MAP_FIXED   = 1 << 0;
 
         /// Allows mapping the page as RWX. While this may seem useful for self-modifying code and
         /// JIT engines, it is instead recommended to convert between mutable and executable
@@ -69,7 +69,14 @@ bitflags! {
         /// If the user modified the pages, then executing the code may result in undefined
         /// behavior. To ensure correct behavior a user has to flush the instruction cache after
         /// modifying and before executing the page.
-        const JIT       = 1 << 1;
+        const JIT         = 1 << 1;
+
+        /// Maps the memory mapping without committing physical pages to back it.
+        ///
+        /// On linux this is the default behavior. Pages are committed on first access. On
+        /// Microsoft Windows, it is necessary to expressly not commit the pages at allocation
+        /// time, and to commit them before use.
+        const DONT_COMMIT = 1 << 2;
     }
 
     /// A set of (supported) page sizes.
@@ -326,6 +333,11 @@ macro_rules! mmap_impl {
                 }
 
                 Ok(MmapMut { inner: self.inner })
+            }
+
+            /// Commits the specified sub-range of this mapping
+            pub fn commit(&self, range: Range<usize>) -> Result<(), Error> {
+                self.inner.commit(range)
             }
         }
     };

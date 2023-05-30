@@ -153,6 +153,10 @@ impl Mmap {
 
         self.do_make(ProtFlags::PROT_READ | ProtFlags::PROT_WRITE | ProtFlags::PROT_EXEC)
     }
+
+    pub fn commit(&self, _range: std::ops::Range<usize>) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 impl Drop for Mmap {
