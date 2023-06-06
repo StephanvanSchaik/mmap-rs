@@ -233,7 +233,7 @@ macro_rules! mmap_impl {
             /// Remaps this memory mapping as inaccessible.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_none(self) -> Result<MmapNone, (Self, Error)> {
+            pub fn make_none(mut self) -> Result<MmapNone, (Self, Error)> {
                 if let Err(e) = self.inner.make_none() {
                     return Err((self, e));
                 }
@@ -244,7 +244,7 @@ macro_rules! mmap_impl {
             /// Remaps this memory mapping as immutable.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_read_only(self) -> Result<Mmap, (Self, Error)> {
+            pub fn make_read_only(mut self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_read_only() {
                     return Err((self, e));
                 }
@@ -255,7 +255,7 @@ macro_rules! mmap_impl {
             /// Remaps this memory mapping as executable.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_exec(self) -> Result<Mmap, (Self, Error)> {
+            pub fn make_exec(mut self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec() {
                     return Err((self, e));
                 }
@@ -277,7 +277,7 @@ macro_rules! mmap_impl {
             /// executing the page.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub unsafe fn make_exec_no_flush(self) -> Result<Mmap, (Self, Error)> {
+            pub unsafe fn make_exec_no_flush(mut self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec() {
                     return Err((self, e));
                 }
@@ -288,7 +288,7 @@ macro_rules! mmap_impl {
             /// Remaps this mapping to be mutable.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_mut(self) -> Result<MmapMut, (Self, Error)> {
+            pub fn make_mut(mut self) -> Result<MmapMut, (Self, Error)> {
                 if let Err(e) = self.inner.make_mut() {
                     return Err((self, e));
                 }
@@ -320,7 +320,7 @@ macro_rules! mmap_impl {
             /// executing the page.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub unsafe fn make_exec_mut(self) -> Result<MmapMut, (Self, Error)> {
+            pub unsafe fn make_exec_mut(mut self) -> Result<MmapMut, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec_mut() {
                     return Err((self, e));
                 }

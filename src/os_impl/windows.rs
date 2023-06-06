@@ -19,6 +19,7 @@ bitflags! {
     struct Flags: u32 {
         const COPY_ON_WRITE = 1 << 0;
         const JIT           = 1 << 1;
+        const COMMITTED     = 1 << 2;
     }
 }
 
@@ -106,9 +107,28 @@ impl Mmap {
         Ok(())
     }
 
-    pub fn do_make(&self, protect: PAGE_PROTECTION_FLAGS) -> Result<(), Error> {
+    pub fn do_make(&mut self, protect: PAGE_PROTECTION_FLAGS) -> Result<(), Error> {
         let mut old_protect = PAGE_PROTECTION_FLAGS::default();
 
+        // Commit the pages if the memory mapping is anonymous and in a reserved state.
+        if self.file.is_none() && !self.flags.contains(Flags::COMMITTED) {
+            let ptr = unsafe {
+                VirtualAlloc(
+                    Some(self.ptr as _),
+                    self.size,
+                    MEM_COMMIT,
+                    protect,
+                )
+            };
+
+            if ptr.is_null() {
+                return Err(std::io::Error::last_os_error())?;
+            }
+
+            self.flags |= Flags::COMMITTED;
+        }
+
+        // Change the protection of the memory mapping.
         let status = unsafe {
             VirtualProtect(
                 self.ptr as *mut std::ffi::c_void,
@@ -144,19 +164,19 @@ impl Mmap {
         Ok(())
     }
 
-    pub fn make_none(&self) -> Result<(), Error> {
+    pub fn make_none(&mut self) -> Result<(), Error> {
         self.do_make(PAGE_NOACCESS)
     }
 
-    pub fn make_read_only(&self) -> Result<(), Error> {
+    pub fn make_read_only(&mut self) -> Result<(), Error> {
         self.do_make(PAGE_READWRITE)
     }
 
-    pub fn make_exec(&self) -> Result<(), Error> {
+    pub fn make_exec(&mut self) -> Result<(), Error> {
         self.do_make(PAGE_EXECUTE_READ)
     }
 
-    pub fn make_mut(&self) -> Result<(), Error> {
+    pub fn make_mut(&mut self) -> Result<(), Error> {
         let protect = if self.file.is_some() && self.flags.contains(Flags::COPY_ON_WRITE) {
             PAGE_WRITECOPY
         } else {
@@ -166,7 +186,7 @@ impl Mmap {
         self.do_make(protect)
     }
 
-    pub fn make_exec_mut(&self) -> Result<(), Error> {
+    pub fn make_exec_mut(&mut self) -> Result<(), Error> {
         if !self.flags.contains(Flags::JIT) {
             return Err(Error::UnsafeFlagNeeded(UnsafeMmapFlags::JIT));
         }
@@ -384,10 +404,14 @@ impl MmapOptions {
 
             ptr
         } else {
-            let mut flags = MEM_COMMIT | MEM_RESERVE;
+            let mut flags = MEM_RESERVE;
+
+            if protection != PAGE_NOACCESS {
+                flags |= MEM_COMMIT;
+            }
 
             if self.flags.contains(MmapFlags::HUGE_PAGES) {
-                flags |= MEM_LARGE_PAGES;
+                flags |= MEM_COMMIT | MEM_LARGE_PAGES;
             }
 
             unsafe {
@@ -415,6 +439,10 @@ impl MmapOptions {
 
         if self.unsafe_flags.contains(UnsafeMmapFlags::JIT) {
             flags |= Flags::JIT;
+        }
+
+        if protection != PAGE_NOACCESS {
+            flags |= Flags::COMMITTED;
         }
 
         Ok(Mmap {

@@ -130,23 +130,23 @@ impl Mmap {
         Ok(())
     }
 
-    pub fn make_none(&self) -> Result<(), Error> {
+    pub fn make_none(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_NONE)
     }
 
-    pub fn make_read_only(&self) -> Result<(), Error> {
+    pub fn make_read_only(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_READ)
     }
 
-    pub fn make_exec(&self) -> Result<(), Error> {
+    pub fn make_exec(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_READ | ProtFlags::PROT_EXEC)
     }
 
-    pub fn make_mut(&self) -> Result<(), Error> {
+    pub fn make_mut(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_READ | ProtFlags::PROT_WRITE)
     }
 
-    pub fn make_exec_mut(&self) -> Result<(), Error> {
+    pub fn make_exec_mut(&mut self) -> Result<(), Error> {
         if !self.flags.contains(Flags::JIT) {
             return Err(Error::UnsafeFlagNeeded(UnsafeMmapFlags::JIT));
         }
