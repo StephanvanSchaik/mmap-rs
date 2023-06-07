@@ -425,6 +425,18 @@ macro_rules! mmap_impl {
 
                 Ok(MmapMut { inner: self.inner })
             }
+
+            /// Consumes the memory mapping object, returning a raw pointer to the memory mapping
+            /// as well as the size of the mapping.
+            ///
+            /// After calling this function, the caller is responsible for the memory previously
+            /// managed by the memory mapping object. In particular, the caller should properly
+            /// release the memory. The easiest way to do this is to convert the raw pointer back
+            /// into a memory mapping object with the `Mmap::from_raw` function, allowing the
+            /// `Mmap` destructor to perform the cleanup.
+            pub fn into_raw(self) -> (*mut u8, usize) {
+                self.inner.into_raw()
+            }
         }
     };
 }
