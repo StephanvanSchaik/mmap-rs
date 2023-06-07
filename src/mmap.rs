@@ -426,6 +426,27 @@ macro_rules! mmap_impl {
                 Ok(MmapMut { inner: self.inner })
             }
 
+            /// Construct a memory mapping object from a raw pointer and the size of the memory
+            /// mapping.
+            ///
+            /// After calling this function, the raw pointer is owned by the resulting memory
+            /// mapping object. Specifically, the destructor will unmap the memory. For this to be
+            /// safe, the memory must have been allocated using the `mmap` function on Unix
+            /// platforms and the `VirtualAlloc` function on Microsoft Windows.
+            ///
+            /// # Safety
+            ///
+            /// This function is unsafe because improper use may lead to memory problems. For
+            /// example, a double-free may occur if the function is called twice on the same raw
+            /// pointer.
+            pub unsafe fn from_raw(ptr: *mut u8, size: usize) -> Result<Self, Error> {
+                let inner = platform::Mmap::from_raw(ptr, size)?;
+
+                Ok(Self {
+                    inner,
+                })
+            }
+
             /// Consumes the memory mapping object, returning a raw pointer to the memory mapping
             /// as well as the size of the mapping.
             ///

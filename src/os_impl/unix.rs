@@ -203,6 +203,14 @@ impl Mmap {
         })
     }
 
+    pub fn from_raw(ptr: *mut u8, size: usize) -> Result<Self, Error> {
+        Ok(Self {
+            ptr: Some(ptr),
+            size,
+            flags: Flags::empty(),
+        })
+    }
+
     pub fn into_raw(mut self) -> (*mut u8, usize) {
         let ptr = self.ptr.take().expect("ptr should not be NULL");
 

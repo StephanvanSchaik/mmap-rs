@@ -202,7 +202,7 @@ impl Mmap {
         if !self.area.flags.contains(SharedFlags::FILE) {
             let ptr = unsafe {
                 VirtualAlloc(
-                    Some(self.ptr as *mut std::ffi::c_void),
+                    self.ptr.map(|ptr| ptr as _),
                     self.size,
                     MEM_COMMIT,
                     self.protection,
@@ -275,6 +275,14 @@ impl Mmap {
             size,
             flags: self.flags,
             protection: self.protection,
+        })
+    }
+
+    pub fn from_raw(ptr: *mut u8, size: usize) -> Result<Self, Error> {
+        Ok(Self {
+            ptr: Some(ptr),
+            size,
+            flags: Flags::empty(),
         })
     }
 
