@@ -332,6 +332,28 @@ macro_rules! mmap_impl {
 
                 Ok(MmapMut { inner: self.inner })
             }
+
+            /// Splits the bytes into two at the given byte offset. The byte offset must be page
+            /// size aligned.
+            ///
+            /// Afterwards `self` is limited to the range `[0, at)`, and the returning memory
+            /// mapping is limited to `[at, len)`.
+            pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
+                let inner = self.inner.split_off(at)?;
+
+                Ok(Self { inner })
+            }
+
+            /// Splits the bytes into two at the given byte offset. The byte offset must be page
+            /// size aligned.
+            ///
+            /// Afterwards `self` is limited to the range `[at, len)`, and the returning memory
+            /// mapping is limited to `[0, at)`.
+            pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
+                let inner = self.inner.split_to(at)?;
+
+                Ok(Self { inner })
+            }
         }
     };
 }
