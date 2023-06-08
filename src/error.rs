@@ -14,6 +14,10 @@ pub enum Error {
     #[error("invalid size")]
     InvalidSize,
 
+    /// The offset is invalid.
+    #[error("invalid offset")]
+    InvalidOffset,
+
     /// Represents [`std::io::Error`].
     #[error(transparent)]
     Io(#[from] std::io::Error),

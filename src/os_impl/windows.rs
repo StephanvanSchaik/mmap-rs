@@ -171,6 +171,47 @@ impl Mmap {
 
         self.do_make(protect)
     }
+
+    pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
+        if at >= self.size {
+            return Err(Error::InvalidOffset);
+        }
+
+        if at % MmapOptions::page_size() != 0 {
+            return Err(Error::InvalidOffset);
+        }
+
+        let ptr = unsafe { self.ptr.add(at) };
+        let size = self.size - at;
+        self.size = at;
+
+        Ok(Self {
+            ptr,
+            size,
+            flags: self.flags,
+        })
+    }
+
+    pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
+        if at >= self.size {
+            return Err(Error::InvalidOffset);
+        }
+
+        if at % MmapOptions::page_size() != 0 {
+            return Err(Error::InvalidOffset);
+        }
+
+        let ptr = self.ptr;
+        self.ptr = unsafe { self.ptr.add(at) };
+        let size = self.size;
+        self.size -= at;
+
+        Ok(Self {
+            ptr,
+            size,
+            flags: self.flags,
+        })
+    }
 }
 
 impl Drop for Mmap {
