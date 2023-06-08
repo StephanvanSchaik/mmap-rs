@@ -178,12 +178,6 @@ impl TryInto<PageSize> for PageSizes {
 macro_rules! mmap_impl {
     ($t:ident) => {
         impl $t {
-            /// Yields the file backing this mapping, if this mapping is backed by a file.
-            #[inline]
-            pub fn file(&self) -> Option<&File> {
-                self.inner.file()
-            }
-
             /// Yields a raw immutable pointer of this mapping.
             #[inline]
             pub fn as_ptr(&self) -> *const u8 {
@@ -207,13 +201,24 @@ macro_rules! mmap_impl {
                 self.inner.unlock()
             }
 
-            /// Flushes the memory mapping synchronously, i.e. this function waits for the flush to
-            /// complete.
+            /// Flushes a range of the memory mapping, i.e. this initiates writing dirty pages
+            /// within that range to the disk. Dirty pages are those whose contents have changed
+            /// since the file was mapped.
+            ///
+            /// On Microsoft Windows, this function does not flush the file metadata. Thus, it must
+            /// be followed with a call to [`File::sync_all`] to flush the file metadata. This also
+            /// causes the flush operaton to be synchronous.
+            ///
+            /// On other platforms, the flush operation is synchronous, i.e. this waits until the
+            /// flush operation completes.
             pub fn flush(&self, range: Range<usize>) -> Result<(), Error> {
                 self.inner.flush(range)
             }
 
-            /// Flushes the memory mapping asynchronously.
+            /// Flushes a range of the memory mapping asynchronously, i.e. this initiates writing
+            /// dirty pages within that range to the disk without waiting for the flush operation
+            /// to complete. Dirty pages are those whose contents have changed since the file was
+            /// mapped.
             pub fn flush_async(&self, range: Range<usize>) -> Result<(), Error> {
                 self.inner.flush_async(range)
             }
@@ -431,11 +436,11 @@ impl AsMut<[u8]> for MmapMut {
 
 /// Represents the options for the memory mapping.
 #[derive(Debug)]
-pub struct MmapOptions {
-    inner: platform::MmapOptions,
+pub struct MmapOptions<'a> {
+    inner: platform::MmapOptions<'a>,
 }
 
-impl MmapOptions {
+impl<'a> MmapOptions<'a> {
     /// Constructs the `MmapOptions` builder. The size specified is the size of the mapping to be
     /// allocated in bytes.
     pub fn new(size: usize) -> Result<Self, Error> {
@@ -499,7 +504,7 @@ impl MmapOptions {
     /// [`access_mode`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html#tymethod.access_mode
     /// [`share_mode`]: https://doc.rust-lang.org/std/os/windows/fs/trait.OpenOptionsExt.html#tymethod.share_mode
     /// [`nix::fcntl::flock`]: https://docs.rs/nix/latest/nix/fcntl/fn.flock.html
-    pub unsafe fn with_file(self, file: File, offset: u64) -> Self {
+    pub unsafe fn with_file(self, file: &'a File, offset: u64) -> Self {
         Self {
             inner: self.inner.with_file(file, offset),
         }

@@ -140,7 +140,7 @@ where
         )
 }
 
-impl MmapOptions {
+impl MmapOptions<'_> {
     pub fn page_sizes() -> Result<PageSizes, Error> {
         let mut sizes = 1 << Self::page_size().ilog2();
 
