@@ -44,6 +44,84 @@ impl MemoryAreas<BufReader<File>> {
             marker: PhantomData,
         })
     }
+
+    pub fn query(mut address: usize) -> Result<Option<MemoryArea>, Error> {
+        let task = unsafe { mach_task_self() };
+        let mut address = address as u64;
+        let mut size = 0;
+        let mut info: vm_region_basic_info_64 = unsafe { std::mem::zeroed() };
+
+        let result = unsafe {
+            mach_vm_region(
+                task,
+                &mut address,
+                &mut size,
+                VM_REGION_BASIC_INFO_64,
+                (&mut info as *mut _) as vm_region_info_t,
+                &mut vm_region_basic_info_64::count(),
+                &mut 0,
+            )
+        };
+
+        match result {
+            KERN_INVALID_ADDRESS => return Ok(None),
+            KERN_SUCCESS => (),
+            _ => return Err(Error::Mach(result)),
+        }
+
+        let start = address as usize;
+        let end = start + size as usize;
+        let range = start..end;
+
+        let mut protection = Protection::empty();
+
+        if info.protection & VM_PROT_READ == VM_PROT_READ {
+            protection |= Protection::READ;
+        }
+
+        if info.protection & VM_PROT_WRITE == VM_PROT_WRITE {
+            protection |= Protection::WRITE;
+        }
+
+        if info.protection & VM_PROT_EXECUTE == VM_PROT_EXECUTE {
+            protection |= Protection::EXECUTE;
+        }
+
+        let share_mode = if info.shared != 0 {
+            ShareMode::Shared
+        } else {
+            ShareMode::Private
+        };
+
+        let mut bytes = [0u8; libc::PATH_MAX as _];
+
+        let result = unsafe {
+            proc_regionfilename(
+                getpid().as_raw() as _,
+                address,
+                bytes.as_mut_ptr() as _,
+                bytes.len() as _,
+            )
+        };
+
+        let path = if result == 0 {
+            None
+        } else {
+            let path = match std::str::from_utf8(&bytes[..result as usize]) {
+                Ok(path) => path,
+                Err(e) => return Err(Error::Utf8(e)),
+            };
+
+            Some((Path::new(path).to_path_buf(), info.offset as u64))
+        };
+
+        Ok(Some(MemoryArea {
+            range,
+            protection,
+            share_mode,
+            path,
+        }))
+    }
 }
 
 impl<B: BufRead> Iterator for MemoryAreas<B> {
