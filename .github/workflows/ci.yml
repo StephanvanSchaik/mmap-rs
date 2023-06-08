@@ -81,6 +81,8 @@ jobs:
       run: |
         cargo run --target ${{ matrix.target.rust }} --example areas
         cargo run --target ${{ matrix.target.rust }} --example map_anon
+    - name: Run tests
+      run: cargo test
 
   freebsd:
     runs-on: macos-12
