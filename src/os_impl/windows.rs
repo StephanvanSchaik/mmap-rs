@@ -484,6 +484,79 @@ impl MemoryAreas<BufReader<File>> {
             marker: PhantomData,
         })
     }
+
+    pub fn query(address: usize) -> Result<Option<MemoryArea>, Error> {
+        let handle = unsafe { GetCurrentProcess() };
+        let mut info = MEMORY_BASIC_INFORMATION::default();
+
+        let size = unsafe {
+            VirtualQueryEx(
+                handle,
+                Some(address as _),
+                &mut info,
+                std::mem::size_of::<MEMORY_BASIC_INFORMATION>(),
+            )
+        };
+
+        if size < std::mem::size_of::<MEMORY_BASIC_INFORMATION>() {
+            return Ok(None);
+        }
+
+        let size = info.RegionSize;
+        let start = info.BaseAddress as usize;
+        let end = start + size;
+        let range = start..end;
+
+        if info.State & MEM_COMMIT == VIRTUAL_ALLOCATION_TYPE(0) {
+            return Ok(None);
+        }
+
+        let copy_on_write =
+            info.Protect == PAGE_EXECUTE_WRITECOPY || info.Protect == PAGE_WRITECOPY;
+
+        let share_mode = if info.Type & MEM_PRIVATE == MEM_PRIVATE {
+            ShareMode::Private
+        } else if copy_on_write {
+            ShareMode::CopyOnWrite
+        } else {
+            ShareMode::Shared
+        };
+
+        let protection = match info.Protect {
+            PAGE_EXECUTE => Protection::EXECUTE,
+            PAGE_EXECUTE_READ => Protection::READ | Protection::EXECUTE,
+            PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY => {
+                Protection::READ | Protection::WRITE | Protection::EXECUTE
+            }
+            PAGE_READONLY => Protection::READ,
+            PAGE_READWRITE | PAGE_WRITECOPY => Protection::READ | Protection::WRITE,
+            _ => Protection::empty(),
+        };
+
+        let mut name = vec![0u16; MAX_PATH as usize];
+
+        let name_size = unsafe {
+            K32GetMappedFileNameW(handle, address as *const std::ffi::c_void, &mut name)
+        };
+
+        let path = if name_size != 0 {
+            let path = widestring::U16CStr::from_slice_truncate(&name).unwrap();
+            let path = path.to_string_lossy();
+
+            let offset = (info.BaseAddress as u64) - (info.AllocationBase as u64);
+
+            Some((PathBuf::from(path), offset))
+        } else {
+            None
+        };
+
+        Ok(Some(MemoryArea {
+            range,
+            protection,
+            share_mode,
+            path,
+        }))
+    }
 }
 
 impl<B: BufRead> Iterator for MemoryAreas<B> {

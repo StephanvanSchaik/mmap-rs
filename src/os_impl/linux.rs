@@ -188,6 +188,26 @@ impl MemoryAreas<BufReader<File>> {
 
         Ok(Self { lines })
     }
+
+    pub fn query(address: usize) -> Result<Option<MemoryArea>, Error> {
+        let areas = Self::open(None)?;
+
+        for area in areas {
+            let area = area?;
+
+            if address < area.start() {
+                continue;
+            }
+
+            if area.end() <= address {
+                break;
+            }
+
+            return Ok(Some(area))
+        }
+
+        Ok(None)
+    }
 }
 
 impl<B: BufRead> Iterator for MemoryAreas<B> {

@@ -117,6 +117,13 @@ impl MemoryAreas<BufReader<File>> {
 
         Ok(Self { inner })
     }
+
+    /// Retrieve information about the memory area corresponding to the virtual address in the
+    /// virtual address space of the current process. Returns `Ok(None)` if no memory has been
+    /// mapped at the given virtual address.
+    pub fn query(address: usize) -> Result<Option<MemoryArea>, Error> {
+        platform::MemoryAreas::query(address)
+    }
 }
 
 impl<B: BufRead> Iterator for MemoryAreas<B> {
