@@ -30,7 +30,6 @@ bitflags! {
 
 #[derive(Debug)]
 pub struct Mmap {
-    file: Option<File>,
     ptr: *mut u8,
     size: usize,
     flags: Flags,
@@ -40,11 +39,6 @@ unsafe impl Send for Mmap {}
 unsafe impl Sync for Mmap {}
 
 impl Mmap {
-    #[inline]
-    pub fn file(&self) -> Option<&File> {
-        self.file.as_ref()
-    }
-
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
         self.ptr
@@ -162,16 +156,16 @@ impl Drop for Mmap {
 }
 
 #[derive(Debug)]
-pub struct MmapOptions {
+pub struct MmapOptions<'a> {
     address: Option<usize>,
-    file: Option<(File, u64)>,
+    file: Option<(&'a File, u64)>,
     size: NonZeroUsize,
     flags: MmapFlags,
     unsafe_flags: UnsafeMmapFlags,
     page_size: Option<PageSize>,
 }
 
-impl MmapOptions {
+impl<'a> MmapOptions<'a> {
     pub fn new(size: usize) -> Result<Self, Error> {
         Ok(Self {
             address: None,
@@ -208,7 +202,7 @@ impl MmapOptions {
         self
     }
 
-    pub fn with_file(mut self, file: File, offset: u64) -> Self {
+    pub fn with_file(mut self, file: &'a File, offset: u64) -> Self {
         self.file = Some((file, offset));
         self
     }
@@ -329,12 +323,10 @@ impl MmapOptions {
                 protect,
                 self.flags(),
                 self.file
-                    .as_ref()
                     .map(|(file, _)| file.as_raw_fd())
                     .unwrap_or(-1),
                 self.file
-                    .as_ref()
-                    .map(|(_, offset)| *offset as _)
+                    .map(|(_, offset)| offset as _)
                     .unwrap_or(0),
             )
         }?;
@@ -366,7 +358,6 @@ impl MmapOptions {
         }
 
         Ok(Mmap {
-            file: self.file.map(|(file, _)| file),
             ptr: ptr as *mut u8,
             size: size.get(),
             flags,
