@@ -26,7 +26,7 @@ bitflags! {
         /// Use huge pages for this allocation.
         const HUGE_PAGES             = 1 << 3;
 
-        /// The region grows downward like a stack.
+        /// The region grows downward like a stack. Only compatible with unix compatible platforms.
         const STACK                  = 1 << 4;
 
         /// The pages will not be included in a core dump.
