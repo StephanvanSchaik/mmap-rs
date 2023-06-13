@@ -179,7 +179,7 @@ impl Mmap {
 
         let ptr = self.ptr;
         self.ptr = unsafe { self.ptr.add(at) };
-        let size = self.size;
+        let size = at;
         self.size -= at;
 
         Ok(Self {
