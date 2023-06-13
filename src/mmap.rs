@@ -21,15 +21,21 @@ bitflags! {
         const POPULATE               = 1 << 1;
 
         /// Do not reserve swap space for this allocation.
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
         const NO_RESERVE             = 1 << 2;
 
         /// Use huge pages for this allocation.
         const HUGE_PAGES             = 1 << 3;
 
-        /// The region grows downward like a stack. Only compatible with unix compatible platforms.
+        /// The region grows downward like a stack on certain Unix platforms (e.g. FreeBSD).
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
         const STACK                  = 1 << 4;
 
         /// The pages will not be included in a core dump.
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
         const NO_CORE_DUMP           = 1 << 5;
 
         /// Lock the physical memory to prevent page faults from happening when accessing the
@@ -37,6 +43,8 @@ bitflags! {
         const LOCKED                 = 1 << 6;
 
         /// Suggest to use transparent huge pages for this allocation by calling madvise().
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
         const TRANSPARENT_HUGE_PAGES = 1 << 7;
     }
 
