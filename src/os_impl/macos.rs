@@ -5,10 +5,9 @@ use mach2::{
     kern_return::{KERN_INVALID_ADDRESS, KERN_SUCCESS},
     port::mach_port_name_t,
     traps::{mach_task_self, task_for_pid},
-    vm::mach_vm_region,
+    vm::mach_vm_region_recurse,
     vm_prot::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE},
-    vm_region::VM_REGION_BASIC_INFO_64,
-    vm_region::{vm_region_basic_info_64, vm_region_info_t},
+    vm_region::{SM_COW, SM_SHARED, SM_TRUESHARED, SM_SHARED_ALIASED, vm_region_recurse_info_t, vm_region_submap_info_64},
     vm_types::mach_vm_address_t,
 };
 use nix::unistd::getpid;
@@ -49,24 +48,34 @@ impl MemoryAreas<BufReader<File>> {
         let task = unsafe { mach_task_self() };
         let mut address = address as u64;
         let mut size = 0;
-        let mut info: vm_region_basic_info_64 = unsafe { std::mem::zeroed() };
+        let mut depth = 0;
+        let mut info: vm_region_submap_info_64 = unsafe { std::mem::zeroed() };
 
-        let result = unsafe {
-            mach_vm_region(
-                task,
-                &mut address,
-                &mut size,
-                VM_REGION_BASIC_INFO_64,
-                (&mut info as *mut _) as vm_region_info_t,
-                &mut vm_region_basic_info_64::count(),
-                &mut 0,
-            )
-        };
+        loop {
+            let mut current_depth = depth;
+            let result = unsafe {
+                mach_vm_region_recurse(
+                    task,
+                    &mut address,
+                    &mut size,
+                    &mut current_depth,
+                    (&mut info as *mut _) as vm_region_recurse_info_t,
+                    &mut vm_region_submap_info_64::count(),
+                )
+            };
 
-        match result {
-            KERN_INVALID_ADDRESS => return Ok(None),
-            KERN_SUCCESS => (),
-            _ => return Err(Error::Mach(result)),
+            match result {
+                KERN_INVALID_ADDRESS => return Ok(None),
+                KERN_SUCCESS => (),
+                _ => return Err(Error::Mach(result)),
+            }
+
+            if info.is_submap != 0 {
+                depth += 1;
+                continue;
+            }
+
+            break;
         }
 
         let start = address as usize;
@@ -87,10 +96,9 @@ impl MemoryAreas<BufReader<File>> {
             protection |= Protection::EXECUTE;
         }
 
-        let share_mode = if info.shared != 0 {
-            ShareMode::Shared
-        } else {
-            ShareMode::Private
+        let share_mode = match info.share_mode {
+            SM_COW | SM_SHARED | SM_TRUESHARED | SM_SHARED_ALIASED => ShareMode::Shared,
+            _ => ShareMode::Private,
         };
 
         let mut bytes = [0u8; libc::PATH_MAX as _];
@@ -129,79 +137,89 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut size = 0;
-        let mut info: vm_region_basic_info_64 = unsafe { std::mem::zeroed() };
+        let mut info: vm_region_submap_info_64 = unsafe { std::mem::zeroed() };
+        let mut depth = 0;
 
-        let result = unsafe {
-            mach_vm_region(
-                self.task,
-                &mut self.address,
-                &mut size,
-                VM_REGION_BASIC_INFO_64,
-                (&mut info as *mut _) as vm_region_info_t,
-                &mut vm_region_basic_info_64::count(),
-                &mut 0,
-            )
-        };
+        loop {
+            let mut current_depth = depth;
 
-        match result {
-            KERN_INVALID_ADDRESS => None,
-            KERN_SUCCESS => {
-                let start = self.address as usize;
-                let end = start + size as usize;
-                let range = start..end;
+            let result = unsafe {
+                mach_vm_region_recurse(
+                    self.task,
+                    &mut self.address,
+                    &mut size,
+                    &mut current_depth,
+                    (&mut info as *mut _) as vm_region_recurse_info_t,
+                    &mut vm_region_submap_info_64::count(),
+                )
+            };
 
-                let mut protection = Protection::empty();
-
-                if info.protection & VM_PROT_READ == VM_PROT_READ {
-                    protection |= Protection::READ;
-                }
-
-                if info.protection & VM_PROT_WRITE == VM_PROT_WRITE {
-                    protection |= Protection::WRITE;
-                }
-
-                if info.protection & VM_PROT_EXECUTE == VM_PROT_EXECUTE {
-                    protection |= Protection::EXECUTE;
-                }
-
-                let share_mode = if info.shared != 0 {
-                    ShareMode::Shared
-                } else {
-                    ShareMode::Private
-                };
-
-                let mut bytes = [0u8; libc::PATH_MAX as _];
-
-                let result = unsafe {
-                    proc_regionfilename(
-                        self.pid as _,
-                        self.address,
-                        bytes.as_mut_ptr() as _,
-                        bytes.len() as _,
-                    )
-                };
-
-                let path = if result == 0 {
-                    None
-                } else {
-                    let path = match std::str::from_utf8(&bytes[..result as usize]) {
-                        Ok(path) => path,
-                        Err(e) => return Some(Err(Error::Utf8(e))),
-                    };
-
-                    Some((Path::new(path).to_path_buf(), info.offset as u64))
-                };
-
-                self.address = self.address.saturating_add(size);
-
-                Some(Ok(MemoryArea {
-                    range,
-                    protection,
-                    share_mode,
-                    path,
-                }))
+            match result {
+                KERN_INVALID_ADDRESS => return None,
+                KERN_SUCCESS => (),
+                _ => return Some(Err(Error::Mach(result))),
             }
-            _ => Some(Err(Error::Mach(result))),
+
+            if info.is_submap != 0 {
+                depth += 1;
+                continue;
+            }
+
+            depth = 0;
+
+            let start = self.address as usize;
+            let end = start + size as usize;
+            let range = start..end;
+
+            let mut protection = Protection::empty();
+
+            if info.protection & VM_PROT_READ == VM_PROT_READ {
+                protection |= Protection::READ;
+            }
+
+            if info.protection & VM_PROT_WRITE == VM_PROT_WRITE {
+                protection |= Protection::WRITE;
+            }
+
+            if info.protection & VM_PROT_EXECUTE == VM_PROT_EXECUTE {
+                protection |= Protection::EXECUTE;
+            }
+
+            let share_mode = match info.share_mode {
+                SM_COW | SM_SHARED | SM_TRUESHARED | SM_SHARED_ALIASED => ShareMode::Shared,
+                _ => ShareMode::Private,
+            };
+
+            let mut bytes = [0u8; libc::PATH_MAX as _];
+
+            let result = unsafe {
+                proc_regionfilename(
+                    self.pid as _,
+                    self.address,
+                    bytes.as_mut_ptr() as _,
+                    bytes.len() as _,
+                )
+            };
+
+            let path = if result == 0 {
+                None
+            } else {
+                let path = match std::str::from_utf8(&bytes[..result as usize]) {
+                    Ok(path) => path,
+                    Err(e) => return Some(Err(Error::Utf8(e))),
+                };
+
+                Some((Path::new(path).to_path_buf(), info.offset as u64))
+            };
+
+            self.address = self.address.saturating_add(size);
+
+            return Some(Ok(MemoryArea {
+                range,
+                protection,
+                share_mode,
+                path,
+            }))
         }
     }
 }
