@@ -18,6 +18,10 @@ pub enum Error {
     #[error("invalid offset")]
     InvalidOffset,
 
+    /// The operation is invalid.
+    #[error("invalid operation")]
+    InvalidOperation,
+
     /// Represents [`std::io::Error`].
     #[error(transparent)]
     Io(#[from] std::io::Error),
