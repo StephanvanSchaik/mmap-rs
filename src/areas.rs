@@ -113,7 +113,7 @@ impl MemoryAreas<BufReader<File>> {
     /// Creates an iterator over the memory maps for the specified process. If no process ID is
     /// given, then it enumerates the memory areas of the current process.
     pub fn open(pid: Option<u32>) -> Result<Self, Error> {
-        let inner = platform::MemoryAreas::open(pid)?;
+        let inner = platform::MemoryAreas::open(pid, None)?;
 
         Ok(Self { inner })
     }
@@ -122,7 +122,32 @@ impl MemoryAreas<BufReader<File>> {
     /// virtual address space of the current process. Returns `Ok(None)` if no memory has been
     /// mapped at the given virtual address.
     pub fn query(address: usize) -> Result<Option<MemoryArea>, Error> {
-        platform::MemoryAreas::query(address)
+        Self::query_process(None, address)
+    }
+
+    /// Retrieves information about the memory area(s) corresponding to the virtual address range
+    /// in the virtual address space of the current process.
+    pub fn query_range(range: Range<usize>) -> Result<Self, Error> {
+        Self::query_process_range(None, range)
+    }
+
+    /// Retrieve information about the memory area corresponding to the virtual address in the
+    /// virtual address space of the specified process. This queries the current process if no
+    /// process ID is given. Returns `Ok(None)` if no memory has been mapped at the given
+    /// virtual address.
+    pub fn query_process(pid: Option<u32>, address: usize) -> Result<Option<MemoryArea>, Error> {
+        let mut areas = platform::MemoryAreas::open(pid, Some(address..address + 1))?;
+
+        areas.next().transpose()
+    }
+
+    /// Retrieves information about the memory area(s) corresponding to the virtual address range
+    /// in the virtual address space of the specified process. This queries the current process if
+    /// no process ID is given.
+    pub fn query_process_range(pid: Option<u32>, range: Range<usize>) -> Result<Self, Error> {
+        let inner = platform::MemoryAreas::open(pid, Some(range))?;
+
+        Ok(Self { inner })
     }
 }
 

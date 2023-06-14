@@ -14,7 +14,7 @@ pub use mmap::*;
 mod tests {
     #[test]
     fn map_none() {
-        use crate::MmapOptions;
+        use crate::{MemoryAreas, MmapOptions, Protection};
 
         let mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -22,11 +22,17 @@ mod tests {
             .unwrap();
 
         assert!(mapping.as_ptr() != std::ptr::null());
+
+        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+
+        assert!(!region.protection.contains(Protection::READ));
+        assert!(!region.protection.contains(Protection::WRITE));
+        assert!(!region.protection.contains(Protection::EXECUTE));
     }
 
     #[test]
     fn map() {
-        use crate::MmapOptions;
+        use crate::{MemoryAreas, MmapOptions, Protection};
 
         let mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -34,11 +40,17 @@ mod tests {
             .unwrap();
 
         assert!(mapping.as_ptr() != std::ptr::null());
+
+        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+
+        assert!(region.protection.contains(Protection::READ));
+        assert!(!region.protection.contains(Protection::WRITE));
+        assert!(!region.protection.contains(Protection::EXECUTE));
     }
 
     #[test]
     fn map_mut() {
-        use crate::MmapOptions;
+        use crate::{MemoryAreas, MmapOptions, Protection};
 
         let mut mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -49,6 +61,12 @@ mod tests {
 
         assert!(mapping.as_ptr() != std::ptr::null());
         assert_eq!(mapping[0], 0x42);
+
+        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+
+        assert!(region.protection.contains(Protection::READ));
+        assert!(region.protection.contains(Protection::WRITE));
+        assert!(!region.protection.contains(Protection::EXECUTE));
     }
 
     #[test]

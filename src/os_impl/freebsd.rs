@@ -6,6 +6,7 @@ use bitflags::bitflags;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
+use std::ops::Range;
 use std::path::Path;
 
 bitflags! {
@@ -55,10 +56,11 @@ pub struct MemoryAreas<B> {
     entries: Vec<libc::kinfo_vmentry>,
     index: usize,
     marker: PhantomData<B>,
+    range: Option<Range<usize>>,
 }
 
 impl MemoryAreas<BufReader<File>> {
-    pub fn open(pid: Option<u32>) -> Result<Self, Error> {
+    pub fn open(pid: Option<u32>, range: Option<Range<usize>>) -> Result<Self, Error> {
         // Default to the current process if no PID was specified.
         let pid = match pid {
             Some(pid) => pid as _,
@@ -78,27 +80,8 @@ impl MemoryAreas<BufReader<File>> {
             entries,
             index: 0,
             marker: PhantomData,
+            range,
         })
-    }
-
-    pub fn query(address: usize) -> Result<Option<MemoryArea>, Error> {
-        let areas = Self::open(None)?;
-
-        for area in areas {
-            let area = area?;
-
-            if address < area.start() {
-                continue;
-            }
-
-            if area.end() <= address {
-                break;
-            }
-
-            return Ok(Some(area))
-        }
-
-        Ok(None)
     }
 }
 
@@ -106,70 +89,84 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.entries.len() {
-            return None;
-        }
+        loop {
+            if self.index >= self.entries.len() {
+                return None;
+            }
 
-        let entry = &self.entries[self.index];
-        self.index += 1;
+            let entry = &self.entries[self.index];
+            self.index += 1;
 
-        let flags = KvmeProtection::from_bits_truncate(entry.kve_protection);
+            let flags = KvmeProtection::from_bits_truncate(entry.kve_protection);
 
-        let mut protection = Protection::empty();
+            let mut protection = Protection::empty();
 
-        if flags.contains(KvmeProtection::READ) {
-            protection |= Protection::READ;
-        }
+            if flags.contains(KvmeProtection::READ) {
+                protection |= Protection::READ;
+            }
 
-        if flags.contains(KvmeProtection::WRITE) {
-            protection |= Protection::WRITE;
-        }
+            if flags.contains(KvmeProtection::WRITE) {
+                protection |= Protection::WRITE;
+            }
 
-        if flags.contains(KvmeProtection::EXECUTE) {
-            protection |= Protection::EXECUTE;
-        }
+            if flags.contains(KvmeProtection::EXECUTE) {
+                protection |= Protection::EXECUTE;
+            }
 
-        let flags = KvmeFlags::from_bits_truncate(entry.kve_flags);
+            let flags = KvmeFlags::from_bits_truncate(entry.kve_flags);
 
-        let share_mode = if flags.contains(KvmeFlags::COW) {
-            ShareMode::CopyOnWrite
-        } else {
-            ShareMode::Private
-        };
-
-        let start = entry.kve_start as usize;
-        let end = entry.kve_end as usize;
-        let offset = entry.kve_offset;
-
-        // Parse the path.
-        let path: Vec<u8> = entry
-            .kve_path
-            .iter()
-            .flatten()
-            .map(|byte| *byte as u8)
-            .collect();
-
-        let last = match path.iter().position(|&c| c == 0) {
-            Some(end) => end,
-            _ => path.len(),
-        };
-
-        let path = if last == 0 {
-            None
-        } else {
-            let path = match std::str::from_utf8(&path) {
-                Ok(path) => path,
-                Err(e) => return Some(Err(Error::Utf8(e))),
+            let share_mode = if flags.contains(KvmeFlags::COW) {
+                ShareMode::CopyOnWrite
+            } else {
+                ShareMode::Private
             };
 
-            Some((Path::new(path).to_path_buf(), offset))
-        };
+            let start = entry.kve_start as usize;
+            let end = entry.kve_end as usize;
+            let offset = entry.kve_offset;
 
-        Some(Ok(MemoryArea {
-            range: start..end,
-            protection,
-            share_mode,
-            path,
-        }))
+            if let Some(ref range) = self.range {
+                if end <= range.start {
+                    continue;
+                }
+
+                if range.end <= start {
+                    break;
+                }
+            }
+
+            // Parse the path.
+            let path: Vec<u8> = entry
+                .kve_path
+                .iter()
+                .flatten()
+                .map(|byte| *byte as u8)
+                .collect();
+
+            let last = match path.iter().position(|&c| c == 0) {
+                Some(end) => end,
+                _ => path.len(),
+            };
+
+            let path = if last == 0 {
+                None
+            } else {
+                let path = match std::str::from_utf8(&path) {
+                    Ok(path) => path,
+                    Err(e) => return Some(Err(Error::Utf8(e))),
+                };
+
+                Some((Path::new(path).to_path_buf(), offset))
+            };
+
+            return Some(Ok(MemoryArea {
+                range: start..end,
+                protection,
+                share_mode,
+                path,
+            }));
+        }
+
+        None
     }
 }
