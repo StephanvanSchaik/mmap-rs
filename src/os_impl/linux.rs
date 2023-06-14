@@ -173,10 +173,11 @@ impl MmapOptions<'_> {
 
 pub struct MemoryAreas<B> {
     lines: Lines<B>,
+    range: Option<Range<usize>>,
 }
 
 impl MemoryAreas<BufReader<File>> {
-    pub fn open(pid: Option<u32>) -> Result<Self, Error> {
+    pub fn open(pid: Option<u32>, range: Option<Range<usize>>) -> Result<Self, Error> {
         let path = match pid {
             Some(pid) => format!("/proc/{}/maps", pid),
             _ => "/proc/self/maps".to_string(),
@@ -186,27 +187,7 @@ impl MemoryAreas<BufReader<File>> {
         let reader = BufReader::new(file);
         let lines = reader.lines();
 
-        Ok(Self { lines })
-    }
-
-    pub fn query(address: usize) -> Result<Option<MemoryArea>, Error> {
-        let areas = Self::open(None)?;
-
-        for area in areas {
-            let area = area?;
-
-            if address < area.start() {
-                continue;
-            }
-
-            if area.end() <= address {
-                break;
-            }
-
-            return Ok(Some(area))
-        }
-
-        Ok(None)
+        Ok(Self { lines, range })
     }
 }
 
@@ -214,19 +195,33 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
     type Item = Result<MemoryArea, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let line = match self.lines.next() {
-            Some(Ok(line)) => line,
-            Some(Err(e)) => return Some(Err(Error::Io(e))),
-            None => return None,
-        };
+        loop {
+            let line = match self.lines.next() {
+                Some(Ok(line)) => line,
+                Some(Err(e)) => return Some(Err(Error::Io(e))),
+                None => return None,
+            };
 
-        use combine::stream::position::Stream;
+            use combine::stream::position::Stream;
 
-        let result = match memory_region().easy_parse(Stream::new(line.as_str())) {
-            Ok((region, _)) => Some(Ok(region)),
-            _ => None,
-        };
+            let region = match memory_region().easy_parse(Stream::new(line.as_str())) {
+                Ok((region, _)) => region,
+                _ => return None,
+            };
 
-        result
+            if let Some(ref range) = self.range {
+                if region.end() <= range.start {
+                    continue;
+                }
+
+                if range.end <= region.start() {
+                    break;
+                }
+            }
+
+            return Some(Ok(region));
+        }
+
+        None
     }
 }
