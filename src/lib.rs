@@ -50,4 +50,50 @@ mod tests {
         assert!(mapping.as_ptr() != std::ptr::null());
         assert_eq!(mapping[0], 0x42);
     }
+
+    #[test]
+    fn split_off() {
+        use crate::MmapOptions;
+
+        let mut mapping = MmapOptions::new(2 * MmapOptions::page_size())
+            .unwrap()
+            .map_mut()
+            .unwrap();
+
+        assert!(mapping.split_off(1).is_err());
+
+        mapping[0] = 0x1;
+        mapping[MmapOptions::page_size()] = 0x2;
+
+        let rest = mapping.split_off(MmapOptions::page_size()).unwrap();
+
+        assert_eq!(mapping[0], 0x1);
+        assert_eq!(rest[0], 0x2);
+        assert_eq!(mapping.len(), MmapOptions::page_size());
+        assert_eq!(rest.len(), MmapOptions::page_size());
+        assert!(mapping.as_ptr() < rest.as_ptr());
+    }
+
+    #[test]
+    fn split_to() {
+        use crate::MmapOptions;
+
+        let mut mapping = MmapOptions::new(2 * MmapOptions::page_size())
+            .unwrap()
+            .map_mut()
+            .unwrap();
+
+        assert!(mapping.split_to(1).is_err());
+
+        mapping[0] = 0x1;
+        mapping[MmapOptions::page_size()] = 0x2;
+
+        let rest = mapping.split_to(MmapOptions::page_size()).unwrap();
+
+        assert_eq!(mapping[0], 0x2);
+        assert_eq!(rest[0], 0x1);
+        assert_eq!(mapping.len(), MmapOptions::page_size());
+        assert_eq!(rest.len(), MmapOptions::page_size());
+        assert!(mapping.as_ptr() > rest.as_ptr());
+    }
 }
