@@ -114,4 +114,43 @@ mod tests {
         assert_eq!(rest.len(), MmapOptions::page_size());
         assert!(mapping.as_ptr() > rest.as_ptr());
     }
+
+    #[test]
+    fn query_range() {
+        use crate::{MemoryAreas, MmapOptions};
+
+        // Allocate three pages.
+        let mut left = MmapOptions::new(3 * MmapOptions::page_size())
+            .unwrap()
+            .map_mut()
+            .unwrap();
+
+        // Split into left, middle and right.
+        let mut middle = left.split_off(MmapOptions::page_size()).unwrap();
+        let right = middle.split_off(MmapOptions::page_size()).unwrap();
+
+        assert!(left.as_ptr() < middle.as_ptr());
+        assert!(middle.as_ptr() < right.as_ptr());
+
+        // Drop the middle page.
+        drop(middle);
+
+        // Query the range, which should yield two memory regions.
+        let start = left.as_ptr() as usize;
+        let end = right.as_ptr() as usize + right.len();
+
+        let mut areas = MemoryAreas::query_range(start..end)
+            .unwrap();
+
+        let region = areas.next().unwrap().unwrap();
+        assert_eq!(region.end(), left.as_ptr() as usize + MmapOptions::page_size());
+        let mut region = areas.next().unwrap().unwrap();
+
+        if region.start() != right.as_ptr() as usize {
+            region = areas.next().unwrap().unwrap();
+        }
+
+        assert_eq!(region.start(), right.as_ptr() as usize);
+        assert!(areas.next().is_none());
+    }
 }

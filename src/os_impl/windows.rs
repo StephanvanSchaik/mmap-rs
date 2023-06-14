@@ -6,6 +6,7 @@ use std::fs::File;
 use std::ops::Range;
 use std::os::windows::io::AsRawHandle;
 use std::path::PathBuf;
+use std::sync::Arc;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{CloseHandle, HANDLE, MAX_PATH};
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
@@ -24,7 +25,25 @@ bitflags! {
 }
 
 #[derive(Debug)]
+pub struct ReservedArea {
+    ptr: *mut u8,
+}
+
+impl Drop for ReservedArea {
+    fn drop(&mut self) {
+        let _ = unsafe {
+            VirtualFree(
+                self.ptr as *mut _,
+                0,
+                VIRTUAL_FREE_TYPE(MEM_RELEASE.0),
+            )
+        };
+    }
+}
+
+#[derive(Debug)]
 pub struct Mmap {
+    area: Option<Arc<ReservedArea>>,
     ptr: *mut u8,
     size: usize,
     flags: Flags,
@@ -173,6 +192,10 @@ impl Mmap {
     }
 
     pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
+        if self.area.is_none() {
+            return Err(Error::InvalidOperation);
+        }
+
         if at >= self.size {
             return Err(Error::InvalidOffset);
         }
@@ -186,6 +209,7 @@ impl Mmap {
         self.size = at;
 
         Ok(Self {
+            area: self.area.clone(),
             ptr,
             size,
             flags: self.flags,
@@ -193,6 +217,10 @@ impl Mmap {
     }
 
     pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
+        if self.area.is_none() {
+            return Err(Error::InvalidOperation);
+        }
+
         if at >= self.size {
             return Err(Error::InvalidOffset);
         }
@@ -207,6 +235,7 @@ impl Mmap {
         self.size -= at;
 
         Ok(Self {
+            area: self.area.clone(),
             ptr,
             size,
             flags: self.flags,
@@ -223,8 +252,7 @@ impl Drop for Mmap {
                 VirtualFree(
                     self.ptr as *mut _,
                     self.size,
-                    // FIXME: for some reason BitOr is not implemented for VIRTUAL_FREE_TYPE.
-                    VIRTUAL_FREE_TYPE(MEM_DECOMMIT.0 | MEM_RELEASE.0),
+                    VIRTUAL_FREE_TYPE(MEM_DECOMMIT.0),
                 )
             };
         }
@@ -347,7 +375,7 @@ impl<'a> MmapOptions<'a> {
 
     /// This is a helper function that goes through the process of setting up the desired memory
     /// mapping given the protection flag.
-    fn do_map(mut self, protection: PAGE_PROTECTION_FLAGS) -> Result<Mmap, Error> {
+    fn do_map(self, protection: PAGE_PROTECTION_FLAGS) -> Result<Mmap, Error> {
         // We have to check whether we can create the file mapping with write and execute
         // permissions. As Microsoft Windows won't let us set any access flags other than those
         // that have been set initially, we have to figure out the full set of access flags that
@@ -453,7 +481,14 @@ impl<'a> MmapOptions<'a> {
             flags |= Flags::FILE;
         }
 
+        let area = if self.file.is_none() {
+            Some(Arc::new(ReservedArea { ptr: ptr as *mut u8 }))
+        } else {
+            None
+        };
+
         Ok(Mmap {
+            area,
             ptr: ptr as *mut u8,
             size,
             flags,
