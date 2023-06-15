@@ -136,19 +136,18 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             }
 
             // Parse the path.
-            let path: Vec<u8> = entry
+            let mut path: Vec<u8> = entry
                 .kve_path
                 .iter()
                 .flatten()
                 .map(|byte| *byte as u8)
                 .collect();
 
-            let last = match path.iter().position(|&c| c == 0) {
-                Some(end) => end,
-                _ => path.len(),
-            };
+            if let Some(end) = path.iter().position(|&c| c == 0) {
+                path.truncate(end);
+            }
 
-            let path = if last == 0 {
+            let path = if path.is_empty() {
                 None
             } else {
                 let path = match std::str::from_utf8(&path) {
