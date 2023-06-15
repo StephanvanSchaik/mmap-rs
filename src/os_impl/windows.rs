@@ -17,34 +17,42 @@ use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
 use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcess, PROCESS_ALL_ACCESS};
 
 bitflags! {
+    struct SharedFlags: u32 {
+        const FILE = 1 << 0;
+    }
+
     struct Flags: u32 {
         const COPY_ON_WRITE = 1 << 0;
         const JIT           = 1 << 1;
-        const FILE          = 1 << 2;
-        const COMMITTED     = 1 << 3;
+        const COMMITTED     = 1 << 2;
     }
 }
 
 #[derive(Debug)]
-pub struct ReservedArea {
+pub struct SharedArea {
     ptr: *mut u8,
+    flags: SharedFlags,
 }
 
-impl Drop for ReservedArea {
+impl Drop for SharedArea {
     fn drop(&mut self) {
-        let _ = unsafe {
-            VirtualFree(
-                self.ptr as *mut _,
-                0,
-                VIRTUAL_FREE_TYPE(MEM_RELEASE.0),
-            )
-        };
+        if self.flags.contains(SharedFlags::FILE) {
+            let _ = unsafe { UnmapViewOfFile(self.ptr as *mut _) };
+        } else {
+            let _ = unsafe {
+                VirtualFree(
+                    self.ptr as *mut _,
+                    0,
+                    VIRTUAL_FREE_TYPE(MEM_RELEASE.0),
+                )
+            };
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct Mmap {
-    area: Option<Arc<ReservedArea>>,
+    area: Arc<SharedArea>,
     ptr: *mut u8,
     size: usize,
     flags: Flags,
@@ -171,7 +179,7 @@ impl Mmap {
     }
 
     pub fn make_mut(&mut self) -> Result<(), Error> {
-        let protect = if self.flags.contains(Flags::FILE) &&
+        let protect = if self.area.flags.contains(SharedFlags::FILE) &&
             self.flags.contains(Flags::COPY_ON_WRITE) {
             PAGE_WRITECOPY
         } else {
@@ -196,7 +204,7 @@ impl Mmap {
     }
 
     pub fn commit(&mut self) -> Result<(), Error> {
-        if !self.flags.contains(Flags::FILE) {
+        if !self.area.flags.contains(SharedFlags::FILE) {
             let ptr = unsafe {
                 VirtualAlloc(
                     Some(self.ptr as *mut std::ffi::c_void),
@@ -217,10 +225,6 @@ impl Mmap {
     }
 
     pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
-        if self.area.is_none() {
-            return Err(Error::InvalidOperation);
-        }
-
         if at >= self.size {
             return Err(Error::InvalidOffset);
         }
@@ -243,10 +247,6 @@ impl Mmap {
     }
 
     pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
-        if self.area.is_none() {
-            return Err(Error::InvalidOperation);
-        }
-
         if at >= self.size {
             return Err(Error::InvalidOffset);
         }
@@ -272,9 +272,7 @@ impl Mmap {
 
 impl Drop for Mmap {
     fn drop(&mut self) {
-        if self.flags.contains(Flags::FILE) {
-            let _ = unsafe { UnmapViewOfFile(self.ptr as *mut _) };
-        } else if self.flags.contains(Flags::COMMITTED) {
+        if self.flags.contains(Flags::COMMITTED) {
             let _ = unsafe {
                 VirtualFree(
                     self.ptr as *mut _,
@@ -511,15 +509,16 @@ impl<'a> MmapOptions<'a> {
             flags |= Flags::JIT;
         }
 
+        let mut shared_flags = SharedFlags::empty();
+
         if self.file.is_some() {
-            flags |= Flags::FILE;
+            shared_flags |= SharedFlags::FILE;
         }
 
-        let area = if self.file.is_none() {
-            Some(Arc::new(ReservedArea { ptr: ptr as *mut u8 }))
-        } else {
-            None
-        };
+        let area = Arc::new(SharedArea {
+            ptr: ptr as *mut u8,
+            flags: shared_flags,
+        });
 
         Ok(Mmap {
             area,
