@@ -6,10 +6,11 @@ use mach2::{
     port::mach_port_name_t,
     traps::{mach_task_self, task_for_pid},
     vm::mach_vm_region_recurse,
+    vm_inherit::VM_INHERIT_SHARE,
     vm_prot::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE},
     vm_region::{
-        vm_region_recurse_info_t, vm_region_submap_info_64, SM_COW, SM_SHARED, SM_SHARED_ALIASED,
-        SM_TRUESHARED,
+        vm_region_recurse_info_t, vm_region_submap_info_64, SM_COW, SM_PRIVATE_ALIASED, SM_SHARED,
+        SM_SHARED_ALIASED, SM_TRUESHARED,
     },
     vm_types::mach_vm_address_t,
 };
@@ -111,9 +112,18 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
                 protection |= Protection::EXECUTE;
             }
 
-            let share_mode = match info.share_mode {
-                SM_COW | SM_SHARED | SM_TRUESHARED | SM_SHARED_ALIASED => ShareMode::Shared,
-                _ => ShareMode::Private,
+            let share_mode = match info.inheritance {
+                VM_INHERIT_SHARE => match info.share_mode {
+                    SM_COW => ShareMode::CopyOnWrite,
+                    _ => ShareMode::Shared,
+                },
+                _ => match info.share_mode {
+                    SM_COW => ShareMode::CopyOnWrite,
+                    SM_PRIVATE_ALIASED | SM_SHARED | SM_SHARED_ALIASED | SM_TRUESHARED => {
+                        ShareMode::Shared
+                    }
+                    _ => ShareMode::Private,
+                },
             };
 
             let mut bytes = [0u8; libc::PATH_MAX as _];
