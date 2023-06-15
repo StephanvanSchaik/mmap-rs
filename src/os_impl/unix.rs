@@ -367,12 +367,8 @@ impl<'a> MmapOptions<'a> {
                 size,
                 protect,
                 self.flags(),
-                self.file
-                    .map(|(file, _)| file.as_raw_fd())
-                    .unwrap_or(-1),
-                self.file
-                    .map(|(_, offset)| offset as _)
-                    .unwrap_or(0),
+                self.file.map(|(file, _)| file.as_raw_fd()).unwrap_or(-1),
+                self.file.map(|(_, offset)| offset as _).unwrap_or(0),
             )
         }?;
 

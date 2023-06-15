@@ -7,7 +7,10 @@ use mach2::{
     traps::{mach_task_self, task_for_pid},
     vm::mach_vm_region_recurse,
     vm_prot::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE},
-    vm_region::{SM_COW, SM_SHARED, SM_TRUESHARED, SM_SHARED_ALIASED, vm_region_recurse_info_t, vm_region_submap_info_64},
+    vm_region::{
+        vm_region_recurse_info_t, vm_region_submap_info_64, SM_COW, SM_SHARED, SM_SHARED_ALIASED,
+        SM_TRUESHARED,
+    },
     vm_types::mach_vm_address_t,
 };
 use nix::unistd::getpid;
@@ -41,7 +44,10 @@ impl MemoryAreas<BufReader<File>> {
         Ok(Self {
             pid: pid.unwrap_or(getpid().as_raw() as _),
             task,
-            address: range.as_ref().map(|range| range.start as mach_vm_address_t).unwrap_or(0),
+            address: range
+                .as_ref()
+                .map(|range| range.start as mach_vm_address_t)
+                .unwrap_or(0),
             end: range.map(|range| range.end),
             marker: PhantomData,
         })
@@ -139,7 +145,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
                 protection,
                 share_mode,
                 path,
-            }))
+            }));
         }
     }
 }
