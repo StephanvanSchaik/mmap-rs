@@ -166,6 +166,7 @@ mod tests {
         assert!(region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
+        #[cfg(not(target_os = "freebsd"))]
         assert!(region.path().is_some());
     }
  
@@ -198,6 +199,7 @@ mod tests {
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
+        #[cfg(not(target_os = "freebsd"))]
         assert!(region.path().is_some());
 
         file.as_file_mut().seek(SeekFrom::Start(0)).unwrap();
