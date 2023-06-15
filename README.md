@@ -53,4 +53,6 @@ Tier 3 (no CI, but should work):
 - [x] Huge page support.
 - [x] Stack support (also known as `MAP_STACK` on Unix).
 - [x] Support to exclude memory maps from core dumps (on Unix only).
-- [x] Iterator over the memory areas of the current/a given process.
+- [x] Reserve memory mappings, rather than directly committing them.
+- [x] Split memory mappings.
+- [x] Query the memory areas of the current/a given process (for a given address or address range).
