@@ -665,6 +665,12 @@ macro_rules! reserved_impl {
                 self.inner.as_ptr()
             }
 
+            /// Yields the length of this mapping.
+            #[inline]
+            pub fn len(&self) -> usize {
+                self.inner.size()
+            }
+
             /// Yields the size of this mapping.
             #[inline]
             pub fn size(&self) -> usize {
