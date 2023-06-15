@@ -281,7 +281,8 @@ macro_rules! mmap_impl {
             }
 
             /// Remaps this memory mapping as executable, but does not flush the instruction cache.
-            /// Note that this is **unsafe**.
+            ///
+            /// # Safety
             ///
             /// While the x86 and x86-64 architectures guarantee cache coherency between the L1 instruction
             /// and the L1 data cache, other architectures such as Arm and AArch64 do not. If the user
@@ -315,9 +316,10 @@ macro_rules! mmap_impl {
             /// code and JIT engines, it is instead recommended to convert between mutable and executable
             /// mappings using [`Mmap::make_mut()`] and [`MmapMut::make_exec()`] instead.
             ///
-            /// As it may be tempting to use this function, this function has been marked as **unsafe**.
             /// Make sure to read the text below to understand the complications of this function before
             /// using it. The [`UnsafeMmapFlags::JIT`] flag must be set for this function to succeed.
+            ///
+            /// # Safety
             ///
             /// RWX pages are an interesting targets to attackers, e.g. for buffer overflow attacks, as RWX
             /// mappings can potentially simplify such attacks. Without RWX mappings, attackers instead
@@ -516,6 +518,8 @@ impl<'a> MmapOptions<'a> {
     /// [`Mmap::make_exec()`]. Fortunately, Rust provides [`OpenOptionsExt`] that allows you to
     /// open the file with executable access rights. See [`access_mode`] for more information.
     ///
+    /// # Safety
+    ///
     /// This function is marked as **unsafe** as the user should be aware that even in the case
     /// that a file is mapped as immutable in the address space of the current process, it does not
     /// guarantee that there does not exist any other mutable mapping to the file.
@@ -549,8 +553,9 @@ impl<'a> MmapOptions<'a> {
 
     /// The desired configuration of the mapping. See [`UnsafeMmapFlags`] for available options.
     ///
-    /// Note this function is **unsafe** as the flags that can be passed to this function have
-    /// unsafe behavior associated with them.
+    /// # Safety
+    ///
+    /// The flags that can be passed to this function have unsafe behavior associated with them.
     pub unsafe fn with_unsafe_flags(self, flags: UnsafeMmapFlags) -> Self {
         Self {
             inner: self.inner.with_unsafe_flags(flags),
@@ -594,6 +599,8 @@ impl<'a> MmapOptions<'a> {
 
     /// Reserves executable and mutable memory.
     ///
+    /// # Safety
+    ///
     /// See [`MmapOptions::map_exec_mut`] for more information.
     pub unsafe fn reserve_exec_mut(self) -> Result<ReservedMut, Error> {
         Ok(ReservedMut {
@@ -633,9 +640,10 @@ impl<'a> MmapOptions<'a> {
     /// code and JIT engines, it is instead recommended to convert between mutable and executable
     /// mappings using [`Mmap::make_mut()`] and [`MmapMut::make_exec()`] instead.
     ///
-    /// As it may be tempting to use this function, this function has been marked as **unsafe**.
     /// Make sure to read the text below to understand the complications of this function before
     /// using it. The [`UnsafeMmapFlags::JIT`] flag must be set for this function to succeed.
+    ///
+    /// # Safety
     ///
     /// RWX pages are an interesting targets to attackers, e.g. for buffer overflow attacks, as RWX
     /// mappings can potentially simplify such attacks. Without RWX mappings, attackers instead
@@ -715,7 +723,8 @@ macro_rules! reserved_impl {
             }
 
             /// Remaps this memory mapping as executable, but does not flush the instruction cache.
-            /// Note that this is **unsafe**.
+            ///
+            /// # Safety
             ///
             /// While the x86 and x86-64 architectures guarantee cache coherency between the L1 instruction
             /// and the L1 data cache, other architectures such as Arm and AArch64 do not. If the user
@@ -749,9 +758,10 @@ macro_rules! reserved_impl {
             /// code and JIT engines, it is instead recommended to convert between mutable and executable
             /// mappings using [`Mmap::make_mut()`] and [`MmapMut::make_exec()`] instead.
             ///
-            /// As it may be tempting to use this function, this function has been marked as **unsafe**.
             /// Make sure to read the text below to understand the complications of this function before
             /// using it. The [`UnsafeMmapFlags::JIT`] flag must be set for this function to succeed.
+            ///
+            /// # Safety
             ///
             /// RWX pages are an interesting targets to attackers, e.g. for buffer overflow attacks, as RWX
             /// mappings can potentially simplify such attacks. Without RWX mappings, attackers instead
