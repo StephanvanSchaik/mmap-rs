@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn map_file() {
-        use crate::{MemoryAreas, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapFlags, MmapOptions, Protection};
         use std::io::Write;
         use tempfile::NamedTempFile;
 
@@ -169,6 +169,7 @@ mod tests {
         let mapping = unsafe {
             MmapOptions::new(MmapOptions::page_size())
                 .unwrap()
+                .with_flags(MmapFlags::SHARED)
                 .with_file(file.as_file(), 0)
                 .map()
                 .unwrap()
@@ -202,6 +203,7 @@ mod tests {
         let mut mapping = unsafe {
             MmapOptions::new(MmapOptions::page_size())
                 .unwrap()
+                .with_flags(MmapFlags::SHARED)
                 .with_file(file.as_file(), 0)
                 .map_mut()
                 .unwrap()
