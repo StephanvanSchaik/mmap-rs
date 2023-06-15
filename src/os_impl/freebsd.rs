@@ -3,6 +3,7 @@ use crate::error::Error;
 use crate::os_impl::unix::MmapOptions;
 use crate::PageSizes;
 use bitflags::bitflags;
+use libc::KVME_TYPE_VNODE;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::marker::PhantomData;
@@ -117,6 +118,10 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
 
             let share_mode = if flags.contains(KvmeFlags::COW) {
                 ShareMode::CopyOnWrite
+            } else if flags.contains(KvmeFlags::NEEDS_COPY) {
+                ShareMode::Private
+            } else if entry.kve_type == KVME_TYPE_VNODE || entry.kve_shadow_count > 1 {
+                ShareMode::Shared
             } else {
                 ShareMode::Private
             };
