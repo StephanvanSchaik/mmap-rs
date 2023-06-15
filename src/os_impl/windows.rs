@@ -21,6 +21,7 @@ bitflags! {
         const COPY_ON_WRITE = 1 << 0;
         const JIT           = 1 << 1;
         const FILE          = 1 << 2;
+        const COMMITTED     = 1 << 3;
     }
 }
 
@@ -47,6 +48,7 @@ pub struct Mmap {
     ptr: *mut u8,
     size: usize,
     flags: Flags,
+    protection: PAGE_PROTECTION_FLAGS,
 }
 
 unsafe impl Send for Mmap {}
@@ -116,7 +118,7 @@ impl Mmap {
         Ok(())
     }
 
-    pub fn do_make(&self, protect: PAGE_PROTECTION_FLAGS) -> Result<(), Error> {
+    pub fn do_make(&mut self, protect: PAGE_PROTECTION_FLAGS) -> Result<(), Error> {
         let mut old_protect = PAGE_PROTECTION_FLAGS::default();
 
         let status = unsafe {
@@ -132,6 +134,8 @@ impl Mmap {
         if !status {
             return Err(std::io::Error::last_os_error())?;
         }
+
+        self.protection = protect;
 
         Ok(())
     }
@@ -154,19 +158,19 @@ impl Mmap {
         Ok(())
     }
 
-    pub fn make_none(&self) -> Result<(), Error> {
+    pub fn make_none(&mut self) -> Result<(), Error> {
         self.do_make(PAGE_NOACCESS)
     }
 
-    pub fn make_read_only(&self) -> Result<(), Error> {
+    pub fn make_read_only(&mut self) -> Result<(), Error> {
         self.do_make(PAGE_READWRITE)
     }
 
-    pub fn make_exec(&self) -> Result<(), Error> {
+    pub fn make_exec(&mut self) -> Result<(), Error> {
         self.do_make(PAGE_EXECUTE_READ)
     }
 
-    pub fn make_mut(&self) -> Result<(), Error> {
+    pub fn make_mut(&mut self) -> Result<(), Error> {
         let protect = if self.flags.contains(Flags::FILE) &&
             self.flags.contains(Flags::COPY_ON_WRITE) {
             PAGE_WRITECOPY
@@ -177,7 +181,7 @@ impl Mmap {
         self.do_make(protect)
     }
 
-    pub fn make_exec_mut(&self) -> Result<(), Error> {
+    pub fn make_exec_mut(&mut self) -> Result<(), Error> {
         if !self.flags.contains(Flags::JIT) {
             return Err(Error::UnsafeFlagNeeded(UnsafeMmapFlags::JIT));
         }
@@ -189,6 +193,27 @@ impl Mmap {
         };
 
         self.do_make(protect)
+    }
+
+    pub fn commit(&mut self) -> Result<(), Error> {
+        if !self.flags.contains(Flags::FILE) {
+            let ptr = unsafe {
+                VirtualAlloc(
+                    Some(self.ptr as *mut std::ffi::c_void),
+                    self.size,
+                    MEM_COMMIT,
+                    self.protection,
+                )
+            };
+
+            if ptr.is_null() {
+                return Err(std::io::Error::last_os_error())?;
+            }
+        }
+
+        self.flags |= Flags::COMMITTED;
+
+        Ok(())
     }
 
     pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
@@ -213,6 +238,7 @@ impl Mmap {
             ptr,
             size,
             flags: self.flags,
+            protection: self.protection,
         })
     }
 
@@ -239,6 +265,7 @@ impl Mmap {
             ptr,
             size,
             flags: self.flags,
+            protection: self.protection,
         })
     }
 }
@@ -247,7 +274,7 @@ impl Drop for Mmap {
     fn drop(&mut self) {
         if self.flags.contains(Flags::FILE) {
             let _ = unsafe { UnmapViewOfFile(self.ptr as *mut _) };
-        } else {
+        } else if self.flags.contains(Flags::COMMITTED) {
             let _ = unsafe {
                 VirtualFree(
                     self.ptr as *mut _,
@@ -375,7 +402,11 @@ impl<'a> MmapOptions<'a> {
 
     /// This is a helper function that goes through the process of setting up the desired memory
     /// mapping given the protection flag.
-    fn do_map(self, protection: PAGE_PROTECTION_FLAGS) -> Result<Mmap, Error> {
+    fn do_map(
+        self,
+        protection: PAGE_PROTECTION_FLAGS,
+        mut flags: Flags,
+    ) -> Result<Mmap, Error> {
         // We have to check whether we can create the file mapping with write and execute
         // permissions. As Microsoft Windows won't let us set any access flags other than those
         // that have been set initially, we have to figure out the full set of access flags that
@@ -445,7 +476,11 @@ impl<'a> MmapOptions<'a> {
 
             ptr
         } else {
-            let mut flags = MEM_COMMIT | MEM_RESERVE;
+            let mut flags = if flags.contains(Flags::COMMITTED) {
+                MEM_COMMIT | MEM_RESERVE
+            } else {
+                MEM_RESERVE
+            };
 
             if self.flags.contains(MmapFlags::HUGE_PAGES) {
                 flags |= MEM_LARGE_PAGES;
@@ -467,7 +502,6 @@ impl<'a> MmapOptions<'a> {
         }
 
         let size = self.size;
-        let mut flags = Flags::empty();
 
         if self.flags.contains(MmapFlags::COPY_ON_WRITE) {
             flags |= Flags::COPY_ON_WRITE;
@@ -492,19 +526,56 @@ impl<'a> MmapOptions<'a> {
             ptr: ptr as *mut u8,
             size,
             flags,
+            protection,
         })
     }
 
+    pub fn reserve_none(self) -> Result<Mmap, Error> {
+        self.do_map(PAGE_NOACCESS, Flags::empty())
+    }
+
+    pub fn reserve(self) -> Result<Mmap, Error> {
+        self.do_map(PAGE_READONLY, Flags::empty())
+    }
+
+    pub fn reserve_exec(self) -> Result<Mmap, Error> {
+        self.do_map(PAGE_EXECUTE_READ, Flags::empty())
+    }
+
+    pub fn reserve_mut(self) -> Result<Mmap, Error> {
+        let protect = if self.file.is_some() && self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+            PAGE_WRITECOPY
+        } else {
+            PAGE_READWRITE
+        };
+
+        self.do_map(protect, Flags::empty())
+    }
+
+    pub fn reserve_exec_mut(self) -> Result<Mmap, Error> {
+        if !self.unsafe_flags.contains(UnsafeMmapFlags::JIT) {
+            return Err(Error::UnsafeFlagNeeded(UnsafeMmapFlags::JIT));
+        }
+
+        let protect = if self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+            PAGE_EXECUTE_WRITECOPY
+        } else {
+            PAGE_EXECUTE_READWRITE
+        };
+
+        self.do_map(protect, Flags::empty())
+    }
+
     pub fn map_none(self) -> Result<Mmap, Error> {
-        self.do_map(PAGE_NOACCESS)
+        self.do_map(PAGE_NOACCESS, Flags::COMMITTED)
     }
 
     pub fn map(self) -> Result<Mmap, Error> {
-        self.do_map(PAGE_READONLY)
+        self.do_map(PAGE_READONLY, Flags::COMMITTED)
     }
 
     pub fn map_exec(self) -> Result<Mmap, Error> {
-        self.do_map(PAGE_EXECUTE_READ)
+        self.do_map(PAGE_EXECUTE_READ, Flags::COMMITTED)
     }
 
     pub fn map_mut(self) -> Result<Mmap, Error> {
@@ -514,7 +585,7 @@ impl<'a> MmapOptions<'a> {
             PAGE_READWRITE
         };
 
-        self.do_map(protect)
+        self.do_map(protect, Flags::COMMITTED)
     }
 
     pub fn map_exec_mut(self) -> Result<Mmap, Error> {
@@ -528,7 +599,7 @@ impl<'a> MmapOptions<'a> {
             PAGE_EXECUTE_READWRITE
         };
 
-        self.do_map(protect)
+        self.do_map(protect, Flags::COMMITTED)
     }
 }
 

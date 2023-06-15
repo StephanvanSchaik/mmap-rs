@@ -148,6 +148,10 @@ impl Mmap {
         self.do_make(ProtFlags::PROT_READ | ProtFlags::PROT_WRITE | ProtFlags::PROT_EXEC)
     }
 
+    pub fn commit(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+
     pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
         if at >= self.size {
             return Err(Error::InvalidOffset);
@@ -403,6 +407,26 @@ impl<'a> MmapOptions<'a> {
             size: size.get(),
             flags,
         })
+    }
+
+    pub fn reserve_none(self) -> Result<Mmap, Error> {
+        self.map_none()
+    }
+
+    pub fn reserve(self) -> Result<Mmap, Error> {
+        self.map()
+    }
+
+    pub fn reserve_exec(self) -> Result<Mmap, Error> {
+        self.map_exec()
+    }
+
+    pub fn reserve_mut(self) -> Result<Mmap, Error> {
+        self.map_mut()
+    }
+
+    pub fn reserve_exec_mut(self) -> Result<Mmap, Error> {
+        self.map_exec_mut()
     }
 
     pub fn map_none(self) -> Result<Mmap, Error> {
