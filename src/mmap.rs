@@ -246,7 +246,7 @@ macro_rules! mmap_impl {
             /// Remaps this memory mapping as inaccessible.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_none(self) -> Result<MmapNone, (Self, Error)> {
+            pub fn make_none(mut self) -> Result<MmapNone, (Self, Error)> {
                 if let Err(e) = self.inner.make_none() {
                     return Err((self, e));
                 }
@@ -257,7 +257,7 @@ macro_rules! mmap_impl {
             /// Remaps this memory mapping as immutable.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_read_only(self) -> Result<Mmap, (Self, Error)> {
+            pub fn make_read_only(mut self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_read_only() {
                     return Err((self, e));
                 }
@@ -268,7 +268,7 @@ macro_rules! mmap_impl {
             /// Remaps this memory mapping as executable.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_exec(self) -> Result<Mmap, (Self, Error)> {
+            pub fn make_exec(mut self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec() {
                     return Err((self, e));
                 }
@@ -290,7 +290,7 @@ macro_rules! mmap_impl {
             /// executing the page.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub unsafe fn make_exec_no_flush(self) -> Result<Mmap, (Self, Error)> {
+            pub unsafe fn make_exec_no_flush(mut self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec() {
                     return Err((self, e));
                 }
@@ -301,7 +301,7 @@ macro_rules! mmap_impl {
             /// Remaps this mapping to be mutable.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub fn make_mut(self) -> Result<MmapMut, (Self, Error)> {
+            pub fn make_mut(mut self) -> Result<MmapMut, (Self, Error)> {
                 if let Err(e) = self.inner.make_mut() {
                     return Err((self, e));
                 }
@@ -333,7 +333,7 @@ macro_rules! mmap_impl {
             /// executing the page.
             ///
             /// In case of failure, this returns the ownership of `self`.
-            pub unsafe fn make_exec_mut(self) -> Result<MmapMut, (Self, Error)> {
+            pub unsafe fn make_exec_mut(mut self) -> Result<MmapMut, (Self, Error)> {
                 if let Err(e) = self.inner.make_exec_mut() {
                     return Err((self, e));
                 }
@@ -564,6 +564,43 @@ impl<'a> MmapOptions<'a> {
         }
     }
 
+    /// Reserves inaccessible memory.
+    pub fn reserve_none(self) -> Result<ReservedNone, Error> {
+        Ok(ReservedNone {
+            inner: self.inner.reserve_none()?,
+        })
+    }
+
+    /// Reserves immutable memory.
+    pub fn reserve(self) -> Result<Reserved, Error> {
+        Ok(Reserved {
+            inner: self.inner.reserve()?,
+        })
+    }
+
+    /// Reserves executable memory.
+    pub fn reserve_exec(self) -> Result<Reserved, Error> {
+        Ok(Reserved {
+            inner: self.inner.reserve_exec()?,
+        })
+    }
+
+    /// Reserves mutable memory.
+    pub fn reserve_mut(self) -> Result<ReservedMut, Error> {
+        Ok(ReservedMut {
+            inner: self.inner.reserve_mut()?,
+        })
+    }
+
+    /// Reserves executable and mutable memory.
+    ///
+    /// See [`MmapOptions::map_exec_mut`] for more information.
+    pub unsafe fn reserve_exec_mut(self) -> Result<ReservedMut, Error> {
+        Ok(ReservedMut {
+            inner: self.inner.reserve_exec_mut()?,
+        })
+    }
+
     /// Maps the memory as inaccessible.
     pub fn map_none(self) -> Result<MmapNone, Error> {
         Ok(MmapNone {
@@ -615,6 +652,207 @@ impl<'a> MmapOptions<'a> {
     pub unsafe fn map_exec_mut(self) -> Result<MmapMut, Error> {
         Ok(MmapMut {
             inner: self.inner.map_exec_mut()?,
+        })
+    }
+}
+
+macro_rules! reserved_impl {
+    ($t:ident) => {
+        impl $t {
+            /// Yields a raw immutable pointer of this mapping.
+            #[inline]
+            pub fn as_ptr(&self) -> *const u8 {
+                self.inner.as_ptr()
+            }
+
+            /// Yields the size of this mapping.
+            #[inline]
+            pub fn size(&self) -> usize {
+                self.inner.size()
+            }
+
+            /// Remaps this memory mapping as inaccessible.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
+            pub fn make_none(mut self) -> Result<ReservedNone, (Self, Error)> {
+                if let Err(e) = self.inner.make_none() {
+                    return Err((self, e));
+                }
+
+                Ok(ReservedNone { inner: self.inner })
+            }
+
+            /// Remaps this memory mapping as immutable.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
+            pub fn make_read_only(mut self) -> Result<Reserved, (Self, Error)> {
+                if let Err(e) = self.inner.make_read_only() {
+                    return Err((self, e));
+                }
+
+                Ok(Reserved { inner: self.inner })
+            }
+
+            /// Remaps this memory mapping as executable.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
+            pub fn make_exec(mut self) -> Result<Reserved, (Self, Error)> {
+                if let Err(e) = self.inner.make_exec() {
+                    return Err((self, e));
+                }
+
+                if let Err(e) = self.inner.flush_icache() {
+                    return Err((self, e));
+                }
+
+                Ok(Reserved { inner: self.inner })
+            }
+
+            /// Remaps this memory mapping as executable, but does not flush the instruction cache.
+            /// Note that this is **unsafe**.
+            ///
+            /// While the x86 and x86-64 architectures guarantee cache coherency between the L1 instruction
+            /// and the L1 data cache, other architectures such as Arm and AArch64 do not. If the user
+            /// modified the pages, then executing the code may result in undefined behavior. To ensure
+            /// correct behavior a user has to flush the instruction cache after modifying and before
+            /// executing the page.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
+            pub unsafe fn make_exec_no_flush(mut self) -> Result<Reserved, (Self, Error)> {
+                if let Err(e) = self.inner.make_exec() {
+                    return Err((self, e));
+                }
+
+                Ok(Reserved { inner: self.inner })
+            }
+
+            /// Remaps this mapping to be mutable.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
+            pub fn make_mut(mut self) -> Result<ReservedMut, (Self, Error)> {
+                if let Err(e) = self.inner.make_mut() {
+                    return Err((self, e));
+                }
+
+                Ok(ReservedMut { inner: self.inner })
+            }
+
+            /// Remaps this mapping to be executable and mutable.
+            ///
+            /// While this may seem useful for self-modifying
+            /// code and JIT engines, it is instead recommended to convert between mutable and executable
+            /// mappings using [`Mmap::make_mut()`] and [`MmapMut::make_exec()`] instead.
+            ///
+            /// As it may be tempting to use this function, this function has been marked as **unsafe**.
+            /// Make sure to read the text below to understand the complications of this function before
+            /// using it. The [`UnsafeMmapFlags::JIT`] flag must be set for this function to succeed.
+            ///
+            /// RWX pages are an interesting targets to attackers, e.g. for buffer overflow attacks, as RWX
+            /// mappings can potentially simplify such attacks. Without RWX mappings, attackers instead
+            /// have to resort to return-oriented programming (ROP) gadgets. To prevent buffer overflow
+            /// attacks, contemporary CPUs allow pages to be marked as non-executable which is then used by
+            /// the operating system to ensure that pages are either marked as writeable or as executable,
+            /// but not both. This is also known as W^X.
+            ///
+            /// While the x86 and x86-64 architectures guarantee cache coherency between the L1 instruction
+            /// and the L1 data cache, other architectures such as Arm and AArch64 do not. If the user
+            /// modified the pages, then executing the code may result in undefined behavior. To ensure
+            /// correct behavior a user has to flush the instruction cache after modifying and before
+            /// executing the page.
+            ///
+            /// In case of failure, this returns the ownership of `self`.
+            pub unsafe fn make_exec_mut(mut self) -> Result<ReservedMut, (Self, Error)> {
+                if let Err(e) = self.inner.make_exec_mut() {
+                    return Err((self, e));
+                }
+
+                Ok(ReservedMut { inner: self.inner })
+            }
+
+            /// Splits the bytes into two at the given byte offset. The byte offset must be page
+            /// size aligned.
+            ///
+            /// Afterwards `self` is limited to the range `[0, at)`, and the returning memory
+            /// mapping is limited to `[at, len)`.
+            pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
+                let inner = self.inner.split_off(at)?;
+
+                Ok(Self { inner })
+            }
+
+            /// Splits the bytes into two at the given byte offset. The byte offset must be page
+            /// size aligned.
+            ///
+            /// Afterwards `self` is limited to the range `[at, len)`, and the returning memory
+            /// mapping is limited to `[0, at)`.
+            pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
+                let inner = self.inner.split_to(at)?;
+
+                Ok(Self { inner })
+            }
+        }
+    }
+}
+
+/// Represents an inaccessible memory mapping in a reserved state, i.e. a memory mapping that is not
+/// backed by any physical pages yet.
+#[derive(Debug)]
+pub struct ReservedNone {
+    inner: platform::Mmap,
+}
+
+reserved_impl!(ReservedNone);
+
+impl TryInto<MmapNone> for ReservedNone {
+    type Error = Error;
+
+    fn try_into(mut self) -> Result<MmapNone, Error> {
+        self.inner.commit()?;
+
+        Ok(MmapNone {
+            inner: self.inner,
+        })
+    }
+}
+
+/// Represents an immutable memory mapping in a reserved state, i.e. a memory mapping that is not
+/// backed by any physical pages yet.
+#[derive(Debug)]
+pub struct Reserved {
+    inner: platform::Mmap,
+}
+
+reserved_impl!(Reserved);
+
+impl TryInto<Mmap> for Reserved {
+    type Error = Error;
+
+    fn try_into(mut self) -> Result<Mmap, Error> {
+        self.inner.commit()?;
+
+        Ok(Mmap {
+            inner: self.inner,
+        })
+    }
+}
+
+/// Represents a mutable memory mapping in a reserved state, i.e. a memory mapping that is not
+/// backed by any physical pages yet.
+#[derive(Debug)]
+pub struct ReservedMut {
+    inner: platform::Mmap,
+}
+
+reserved_impl!(ReservedMut);
+
+impl TryInto<MmapMut> for ReservedMut {
+    type Error = Error;
+
+    fn try_into(mut self) -> Result<MmapMut, Error> {
+        self.inner.commit()?;
+
+        Ok(MmapMut {
+            inner: self.inner,
         })
     }
 }
