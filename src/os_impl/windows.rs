@@ -492,7 +492,7 @@ impl<'a> MmapOptions<'a> {
 
         let size = self.size;
 
-        if self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+        if !self.flags.contains(MmapFlags::SHARED) {
             flags |= Flags::COPY_ON_WRITE;
         }
 
@@ -533,7 +533,7 @@ impl<'a> MmapOptions<'a> {
     }
 
     pub fn reserve_mut(self) -> Result<Mmap, Error> {
-        let protect = if self.file.is_some() && self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+        let protect = if self.file.is_some() && !self.flags.contains(MmapFlags::SHARED) {
             PAGE_WRITECOPY
         } else {
             PAGE_READWRITE
@@ -547,7 +547,7 @@ impl<'a> MmapOptions<'a> {
             return Err(Error::UnsafeFlagNeeded(UnsafeMmapFlags::JIT));
         }
 
-        let protect = if self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+        let protect = if self.file.is_some() && !self.flags.contains(MmapFlags::SHARED) {
             PAGE_EXECUTE_WRITECOPY
         } else {
             PAGE_EXECUTE_READWRITE
@@ -569,7 +569,7 @@ impl<'a> MmapOptions<'a> {
     }
 
     pub fn map_mut(self) -> Result<Mmap, Error> {
-        let protect = if self.file.is_some() && self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+        let protect = if self.file.is_some() && !self.flags.contains(MmapFlags::SHARED) {
             PAGE_WRITECOPY
         } else {
             PAGE_READWRITE
@@ -583,7 +583,7 @@ impl<'a> MmapOptions<'a> {
             return Err(Error::UnsafeFlagNeeded(UnsafeMmapFlags::JIT));
         }
 
-        let protect = if self.flags.contains(MmapFlags::COPY_ON_WRITE) {
+        let protect = if self.file.is_some() && !self.flags.contains(MmapFlags::SHARED) {
             PAGE_EXECUTE_WRITECOPY
         } else {
             PAGE_EXECUTE_READWRITE

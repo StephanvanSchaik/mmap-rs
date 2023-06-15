@@ -10,6 +10,7 @@ All notable changes to mmap-rs will be documented in this file.
 - Change `MmapOptions::with_file()` to require a reference to the file instead of taking ownership instead.
 - Document flags that may have no operation on platforms that do not support the flag, such as `MmapFlags::STACK` on Microsoft Windows.
 - Use `mach_vm_region_recurse()` on MacOS to recurse into submappings.
+- Change `MmapFlags::COPY_ON_WRITE` to `MmapFlags::SHARED`, such that private memory mappings are the default and since copy-on-write semantics only make sense for file mappings.
 
 ## 0.5.0
 

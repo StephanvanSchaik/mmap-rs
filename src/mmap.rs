@@ -12,10 +12,12 @@ use crate::os_impl::windows as platform;
 bitflags! {
     /// The available flags to configure the allocated mapping.
     pub struct MmapFlags: u32 {
-        /// May initially map the pages as shared between multiple mappings, but creates a private
-        /// copy when writing to the pages such that any modifications are not visible to any other
-        /// processes.
-        const COPY_ON_WRITE          = 1 << 0;
+        /// Maps the pages as shared such that any modifcations are visible between processes.
+        ///
+        /// When mapping a file without specifying this flag, the pages may initially be mapped as
+        /// shared, but a private copy will be created when any process writes to the memory
+        /// mapping, such that any modification is not visible to other processes.
+        const SHARED                 = 1 << 0;
 
         /// Ensure the allocated pages are populated, such that they do not cause page faults.
         const POPULATE               = 1 << 1;

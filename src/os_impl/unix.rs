@@ -274,10 +274,10 @@ impl<'a> MmapOptions<'a> {
             flags |= MapFlags::MAP_ANONYMOUS;
         }
 
-        flags |= if self.flags.contains(MmapFlags::COPY_ON_WRITE) {
-            MapFlags::MAP_PRIVATE
-        } else {
+        flags |= if self.flags.contains(MmapFlags::SHARED) {
             MapFlags::MAP_SHARED
+        } else {
+            MapFlags::MAP_PRIVATE
         };
 
         #[cfg(any(target_os = "android", target_os = "linux"))]
