@@ -18,7 +18,7 @@ pub use mmap::*;
 mod tests {
     #[test]
     fn reserve_none() {
-        use crate::{MemoryAreas, MmapNone, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapNone, MmapOptions, Protection, ShareMode};
 
         let mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -35,6 +35,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Private);
         assert!(!region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
@@ -42,7 +43,7 @@ mod tests {
 
     #[test]
     fn reserve() {
-        use crate::{MemoryAreas, Mmap, MmapOptions, Protection};
+        use crate::{MemoryAreas, Mmap, MmapOptions, Protection, ShareMode};
 
         let mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -59,6 +60,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Private);
         assert!(region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
@@ -66,7 +68,7 @@ mod tests {
 
     #[test]
     fn reserve_mut() {
-        use crate::{MemoryAreas, MmapMut, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapMut, MmapOptions, Protection, ShareMode};
 
         let mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -86,6 +88,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Private);
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
@@ -93,7 +96,7 @@ mod tests {
 
     #[test]
     fn map_none() {
-        use crate::{MemoryAreas, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
 
         let mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -106,6 +109,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Private);
         assert!(!region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
@@ -113,7 +117,7 @@ mod tests {
 
     #[test]
     fn map() {
-        use crate::{MemoryAreas, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
 
         let mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -126,6 +130,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Private);
         assert!(region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
@@ -133,7 +138,7 @@ mod tests {
 
     #[test]
     fn map_mut() {
-        use crate::{MemoryAreas, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
 
         let mut mapping = MmapOptions::new(MmapOptions::page_size())
             .unwrap()
@@ -149,6 +154,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Private);
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
@@ -156,7 +162,7 @@ mod tests {
 
     #[test]
     fn map_file() {
-        use crate::{MemoryAreas, MmapFlags, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapFlags, MmapOptions, Protection, ShareMode};
         use std::io::Write;
         use tempfile::NamedTempFile;
 
@@ -182,6 +188,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Shared);
         assert!(region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
@@ -191,7 +198,7 @@ mod tests {
 
     #[test]
     fn map_file_mut() {
-        use crate::{MemoryAreas, MmapFlags, MmapOptions, Protection};
+        use crate::{MemoryAreas, MmapFlags, MmapOptions, Protection, ShareMode};
         use std::io::{Read, Seek, SeekFrom, Write};
         use tempfile::NamedTempFile;
 
@@ -218,6 +225,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
+        assert_eq!(region.share_mode, ShareMode::Shared);
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));
