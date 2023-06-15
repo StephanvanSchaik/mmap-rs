@@ -813,7 +813,7 @@ macro_rules! reserved_impl {
                 Ok(Self { inner })
             }
         }
-    }
+    };
 }
 
 /// Represents an inaccessible memory mapping in a reserved state, i.e. a memory mapping that is not
@@ -831,9 +831,7 @@ impl TryInto<MmapNone> for ReservedNone {
     fn try_into(mut self) -> Result<MmapNone, Error> {
         self.inner.commit()?;
 
-        Ok(MmapNone {
-            inner: self.inner,
-        })
+        Ok(MmapNone { inner: self.inner })
     }
 }
 
@@ -852,9 +850,7 @@ impl TryInto<Mmap> for Reserved {
     fn try_into(mut self) -> Result<Mmap, Error> {
         self.inner.commit()?;
 
-        Ok(Mmap {
-            inner: self.inner,
-        })
+        Ok(Mmap { inner: self.inner })
     }
 }
 
@@ -873,8 +869,6 @@ impl TryInto<MmapMut> for ReservedMut {
     fn try_into(mut self) -> Result<MmapMut, Error> {
         self.inner.commit()?;
 
-        Ok(MmapMut {
-            inner: self.inner,
-        })
+        Ok(MmapMut { inner: self.inner })
     }
 }

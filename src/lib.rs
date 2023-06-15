@@ -1,5 +1,9 @@
 #![doc = include_str!("../README.md")]
-#![deny(missing_docs, rustdoc::broken_intra_doc_links, missing_debug_implementations )]
+#![deny(
+    missing_docs,
+    rustdoc::broken_intra_doc_links,
+    missing_debug_implementations
+)]
 
 mod areas;
 pub mod error;
@@ -27,7 +31,9 @@ mod tests {
 
         assert!(mapping.as_ptr() != std::ptr::null());
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(!region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
@@ -49,7 +55,9 @@ mod tests {
 
         assert!(mapping.as_ptr() != std::ptr::null());
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
@@ -74,7 +82,9 @@ mod tests {
         assert!(mapping.as_ptr() != std::ptr::null());
         assert_eq!(mapping[0], 0x42);
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
@@ -92,7 +102,9 @@ mod tests {
 
         assert!(mapping.as_ptr() != std::ptr::null());
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(!region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
@@ -110,7 +122,9 @@ mod tests {
 
         assert!(mapping.as_ptr() != std::ptr::null());
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
@@ -131,7 +145,9 @@ mod tests {
         assert!(mapping.as_ptr() != std::ptr::null());
         assert_eq!(mapping[0], 0x42);
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
@@ -161,7 +177,9 @@ mod tests {
         assert_ne!(mapping.as_ptr(), std::ptr::null());
         assert_eq!(mapping[0], 0x42);
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(region.protection.contains(Protection::READ));
         assert!(!region.protection.contains(Protection::WRITE));
@@ -169,7 +187,7 @@ mod tests {
         #[cfg(not(target_os = "freebsd"))]
         assert!(region.path().is_some());
     }
- 
+
     #[test]
     fn map_file_mut() {
         use crate::{MemoryAreas, MmapFlags, MmapOptions, Protection};
@@ -194,7 +212,9 @@ mod tests {
         mapping.flush(0..MmapOptions::page_size()).unwrap();
         file.as_file_mut().sync_all().unwrap();
 
-        let region = MemoryAreas::query(mapping.as_ptr() as usize).unwrap().unwrap();
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
 
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
@@ -332,11 +352,13 @@ mod tests {
         let start = left.as_ptr() as usize;
         let end = right.as_ptr() as usize + right.len();
 
-        let mut areas = MemoryAreas::query_range(start..end)
-            .unwrap();
+        let mut areas = MemoryAreas::query_range(start..end).unwrap();
 
         let region = areas.next().unwrap().unwrap();
-        assert_eq!(region.end(), left.as_ptr() as usize + MmapOptions::page_size());
+        assert_eq!(
+            region.end(),
+            left.as_ptr() as usize + MmapOptions::page_size()
+        );
         let mut region = areas.next().unwrap().unwrap();
 
         if region.start() != right.as_ptr() as usize {

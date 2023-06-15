@@ -39,13 +39,7 @@ impl Drop for SharedArea {
         if self.flags.contains(SharedFlags::FILE) {
             let _ = unsafe { UnmapViewOfFile(self.ptr as *mut _) };
         } else {
-            let _ = unsafe {
-                VirtualFree(
-                    self.ptr as *mut _,
-                    0,
-                    VIRTUAL_FREE_TYPE(MEM_RELEASE.0),
-                )
-            };
+            let _ = unsafe { VirtualFree(self.ptr as *mut _, 0, VIRTUAL_FREE_TYPE(MEM_RELEASE.0)) };
         }
     }
 }
@@ -179,8 +173,9 @@ impl Mmap {
     }
 
     pub fn make_mut(&mut self) -> Result<(), Error> {
-        let protect = if self.area.flags.contains(SharedFlags::FILE) &&
-            self.flags.contains(Flags::COPY_ON_WRITE) {
+        let protect = if self.area.flags.contains(SharedFlags::FILE)
+            && self.flags.contains(Flags::COPY_ON_WRITE)
+        {
             PAGE_WRITECOPY
         } else {
             PAGE_READWRITE
@@ -400,11 +395,7 @@ impl<'a> MmapOptions<'a> {
 
     /// This is a helper function that goes through the process of setting up the desired memory
     /// mapping given the protection flag.
-    fn do_map(
-        self,
-        protection: PAGE_PROTECTION_FLAGS,
-        mut flags: Flags,
-    ) -> Result<Mmap, Error> {
+    fn do_map(self, protection: PAGE_PROTECTION_FLAGS, mut flags: Flags) -> Result<Mmap, Error> {
         // We have to check whether we can create the file mapping with write and execute
         // permissions. As Microsoft Windows won't let us set any access flags other than those
         // that have been set initially, we have to figure out the full set of access flags that
