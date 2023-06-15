@@ -277,6 +277,38 @@ mod tests {
     }
 
     #[test]
+    fn split_file() {
+        use crate::MmapOptions;
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        let mut file = NamedTempFile::new().unwrap();
+
+        let mut bytes = vec![0u8; 2 * MmapOptions::page_size()];
+        bytes[0] = 0x1;
+        bytes[MmapOptions::page_size()] = 0x2;
+        file.as_file_mut().write(&bytes).unwrap();
+
+        let mut mapping = unsafe {
+            MmapOptions::new(2 * MmapOptions::page_size())
+                .unwrap()
+                .with_file(file.as_file(), 0)
+                .map()
+                .unwrap()
+        };
+
+        assert!(mapping.split_off(1).is_err());
+
+        let rest = mapping.split_off(MmapOptions::page_size()).unwrap();
+
+        assert_eq!(mapping[0], 0x1);
+        assert_eq!(rest[0], 0x2);
+        assert_eq!(mapping.len(), MmapOptions::page_size());
+        assert_eq!(rest.len(), MmapOptions::page_size());
+        assert!(mapping.as_ptr() < rest.as_ptr());
+    }
+
+    #[test]
     fn query_range() {
         use crate::{MemoryAreas, MmapOptions};
 
