@@ -2,6 +2,15 @@
 
 All notable changes to mmap-rs will be documented in this file.
 
+## 0.6.0
+
+- Add `MemoryAreas::query()` and related functions to query a specific address or address range 
+- Add `Mmap::split_off()` and related functions to split an existing memory mapping at a page boundary.
+- Add `MmapOptions::reserve()` and related functions to reserve memory mappings instead of committing them.
+- Change `MmapOptions::with_file()` to require a reference to the file instead of taking ownership instead.
+- Document flags that may have no operation on platforms that do not support the flag, such as `MmapFlags::STACK` on Microsoft Windows.
+- Use `mach_vm_region_recurse()` on MacOS to recurse into submappings.
+
 ## 0.5.0
 
 - Implement `MmapOptions::page_sizes()` to return the supported page sizes for the platform.
