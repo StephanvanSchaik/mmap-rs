@@ -113,7 +113,7 @@ impl Mmap {
         Ok(())
     }
 
-    fn do_make(&self, protect: ProtFlags) -> Result<(), Error> {
+    fn do_make(&mut self, protect: ProtFlags) -> Result<(), Error> {
         let ptr = self.ptr as *const u8;
         let size = self.size;
 
@@ -124,23 +124,23 @@ impl Mmap {
         Ok(())
     }
 
-    pub fn make_none(&self) -> Result<(), Error> {
+    pub fn make_none(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_NONE)
     }
 
-    pub fn make_read_only(&self) -> Result<(), Error> {
+    pub fn make_read_only(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_READ)
     }
 
-    pub fn make_exec(&self) -> Result<(), Error> {
+    pub fn make_exec(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_READ | ProtFlags::PROT_EXEC)
     }
 
-    pub fn make_mut(&self) -> Result<(), Error> {
+    pub fn make_mut(&mut self) -> Result<(), Error> {
         self.do_make(ProtFlags::PROT_READ | ProtFlags::PROT_WRITE)
     }
 
-    pub fn make_exec_mut(&self) -> Result<(), Error> {
+    pub fn make_exec_mut(&mut self) -> Result<(), Error> {
         if !self.flags.contains(Flags::JIT) {
             return Err(Error::UnsafeFlagNeeded(UnsafeMmapFlags::JIT));
         }
