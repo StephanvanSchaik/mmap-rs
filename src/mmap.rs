@@ -673,6 +673,12 @@ macro_rules! reserved_impl {
                 self.inner.as_ptr()
             }
 
+            /// Returns `true` if the memory mapping is size 0.
+            #[inline]
+            pub fn is_empty(&self) -> bool {
+                self.inner.size() == 0
+            }
+
             /// Yields the length of this mapping.
             #[inline]
             pub fn len(&self) -> usize {
