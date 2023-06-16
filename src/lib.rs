@@ -181,8 +181,19 @@ mod tests {
                 .unwrap()
         };
 
+        let other_mapping = unsafe {
+            MmapOptions::new(MmapOptions::page_size())
+                .unwrap()
+                .with_flags(MmapFlags::SHARED)
+                .with_file(file.as_file(), 0)
+                .map()
+                .unwrap()
+        };
+
         assert_ne!(mapping.as_ptr(), std::ptr::null());
+        assert_ne!(other_mapping.as_ptr(), std::ptr::null());
         assert_eq!(mapping[0], 0x42);
+        assert_eq!(other_mapping[0], 0x42);
 
         let region = MemoryAreas::query(mapping.as_ptr() as usize)
             .unwrap()
@@ -216,8 +227,19 @@ mod tests {
                 .unwrap()
         };
 
+        let other_mapping = unsafe {
+            MmapOptions::new(MmapOptions::page_size())
+                .unwrap()
+                .with_flags(MmapFlags::SHARED)
+                .with_file(file.as_file(), 0)
+                .map()
+                .unwrap()
+        };
+
         assert_ne!(mapping.as_ptr(), std::ptr::null());
+        assert_ne!(other_mapping.as_ptr(), std::ptr::null());
         mapping[0] = 0x42;
+        assert_eq!(other_mapping[0], 0x42);
         mapping.flush(0..MmapOptions::page_size()).unwrap();
         file.as_file_mut().sync_all().unwrap();
 
