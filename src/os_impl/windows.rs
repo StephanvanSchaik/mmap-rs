@@ -404,14 +404,23 @@ impl<'a> MmapOptions<'a> {
         let execute = self.check_protection(PAGE_EXECUTE_READ);
 
         let mut map_access = FILE_MAP_READ;
+
         let mut map_protection = match (write, execute) {
             (true, true) => {
-                map_access |= FILE_MAP_WRITE | FILE_MAP_EXECUTE;
-                PAGE_EXECUTE_READWRITE
+                if self.flags.contains(MmapFlags::SHARED) {
+                    map_access |= FILE_MAP_WRITE | FILE_MAP_EXECUTE;
+                    PAGE_EXECUTE_READWRITE
+                } else {
+                    PAGE_EXECUTE_WRITECOPY
+                }
             }
             (true, false) => {
-                map_access |= FILE_MAP_WRITE;
-                PAGE_READWRITE
+                if self.flags.contains(MmapFlags::SHARED) {
+                    map_access |= FILE_MAP_WRITE;
+                    PAGE_READWRITE
+                } else {
+                    PAGE_WRITECOPY
+                }
             }
             (false, true) => {
                 map_access |= FILE_MAP_EXECUTE;
@@ -419,6 +428,10 @@ impl<'a> MmapOptions<'a> {
             }
             (false, false) => PAGE_READONLY,
         };
+
+        if !self.flags.contains(MmapFlags::SHARED) {
+            map_access = FILE_MAP_COPY;
+        }
 
         let size = self.size;
         let ptr = if let Some((file, offset)) = self.file {
@@ -658,8 +671,8 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
                 continue;
             }
 
-            let copy_on_write =
-                info.Protect == PAGE_EXECUTE_WRITECOPY || info.Protect == PAGE_WRITECOPY;
+            let copy_on_write = info.AllocationProtect == PAGE_EXECUTE_WRITECOPY
+                || info.AllocationProtect == PAGE_WRITECOPY;
 
             let share_mode = if info.Type & MEM_PRIVATE == MEM_PRIVATE {
                 ShareMode::Private
