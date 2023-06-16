@@ -112,20 +112,6 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
                 protection |= Protection::EXECUTE;
             }
 
-            let share_mode = match info.inheritance {
-                VM_INHERIT_SHARE => match info.share_mode {
-                    SM_COW => ShareMode::CopyOnWrite,
-                    _ => ShareMode::Shared,
-                },
-                _ => match info.share_mode {
-                    SM_COW => ShareMode::CopyOnWrite,
-                    SM_PRIVATE_ALIASED | SM_SHARED | SM_SHARED_ALIASED | SM_TRUESHARED => {
-                        ShareMode::Shared
-                    }
-                    _ => ShareMode::Private,
-                },
-            };
-
             let mut bytes = [0u8; libc::PATH_MAX as _];
 
             let result = unsafe {
@@ -146,6 +132,11 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
                 };
 
                 Some((Path::new(path).to_path_buf(), info.offset as u64))
+            };
+
+            let share_mode = match info.inheritance {
+                VM_INHERIT_SHARE => ShareMode::Shared,
+                _ => ShareMode::Private,
             };
 
             self.address = self.address.saturating_add(size);

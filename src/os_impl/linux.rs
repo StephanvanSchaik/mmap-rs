@@ -124,12 +124,6 @@ where
     )
         .map(
             |(range, _, (protection, share_mode), _, offset, _, _, _, _, _, path)| {
-                let share_mode = if path.is_some() && share_mode == ShareMode::Private {
-                    ShareMode::CopyOnWrite
-                } else {
-                    share_mode
-                };
-
                 MemoryArea {
                     range,
                     protection,

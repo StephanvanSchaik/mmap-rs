@@ -116,15 +116,14 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
 
             let flags = KvmeFlags::from_bits_truncate(entry.kve_flags);
 
-            let share_mode = if flags.contains(KvmeFlags::COW) {
-                ShareMode::CopyOnWrite
-            } else if flags.contains(KvmeFlags::NEEDS_COPY) {
-                ShareMode::Private
-            } else if entry.kve_type == KVME_TYPE_VNODE || entry.kve_shadow_count > 1 {
-                ShareMode::Shared
-            } else {
-                ShareMode::Private
-            };
+            let share_mode =
+                if flags.contains(KvmeFlags::COW) || flags.contains(KvmeFlags::NEEDS_COPY) {
+                    ShareMode::Private
+                } else if entry.kve_type == KVME_TYPE_VNODE || entry.kve_shadow_count > 1 {
+                    ShareMode::Shared
+                } else {
+                    ShareMode::Private
+                };
 
             let start = entry.kve_start as usize;
             let end = entry.kve_end as usize;

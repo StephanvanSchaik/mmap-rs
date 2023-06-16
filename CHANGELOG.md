@@ -12,6 +12,7 @@ All notable changes to mmap-rs will be documented in this file.
 - Use `mach_vm_region_recurse()` on MacOS to recurse into submappings.
 - Change `MmapFlags::COPY_ON_WRITE` to `MmapFlags::SHARED`, such that private memory mappings are the default and since copy-on-write semantics only make sense for file mappings.
 - Fix issue where `MemoryAreas::query()` and related functions returned the wrong `ShareMode`.
+- Remove `ShareMode::CopyOnWrite` and use `ShareMode::Private` instead.
 
 ## 0.5.0
 
