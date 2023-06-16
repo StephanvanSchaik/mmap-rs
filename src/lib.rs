@@ -260,6 +260,56 @@ mod tests {
     }
 
     #[test]
+    fn map_file_cow() {
+        use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
+        use std::io::{Read, Seek, SeekFrom, Write};
+        use tempfile::NamedTempFile;
+
+        let mut file = NamedTempFile::new().unwrap();
+
+        let mut bytes = vec![0u8; MmapOptions::page_size()];
+        file.as_file_mut().write(&bytes).unwrap();
+
+        let mut mapping = unsafe {
+            MmapOptions::new(MmapOptions::page_size())
+                .unwrap()
+                .with_file(file.as_file(), 0)
+                .map_mut()
+                .unwrap()
+        };
+
+        let other_mapping = unsafe {
+            MmapOptions::new(MmapOptions::page_size())
+                .unwrap()
+                .with_file(file.as_file(), 0)
+                .map()
+                .unwrap()
+        };
+
+        assert_ne!(mapping.as_ptr(), std::ptr::null());
+        assert_ne!(other_mapping.as_ptr(), std::ptr::null());
+        mapping[0] = 0x42;
+        assert_ne!(other_mapping[0], 0x42);
+        mapping.flush(0..MmapOptions::page_size()).unwrap();
+        file.as_file_mut().sync_all().unwrap();
+
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(region.share_mode, ShareMode::CopyOnWrite);
+        assert!(region.protection.contains(Protection::READ));
+        assert!(region.protection.contains(Protection::WRITE));
+        assert!(!region.protection.contains(Protection::EXECUTE));
+        #[cfg(not(target_os = "freebsd"))]
+        assert!(region.path().is_some());
+
+        file.as_file_mut().seek(SeekFrom::Start(0)).unwrap();
+        file.as_file().read(&mut bytes).unwrap();
+        assert_ne!(bytes[0], 0x42);
+    }
+
+    #[test]
     fn reserve_and_split() {
         use crate::{MmapMut, MmapOptions};
 
