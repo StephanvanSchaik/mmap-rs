@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn map_file_cow() {
+    fn map_file_private() {
         use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
         use std::io::{Read, Seek, SeekFrom, Write};
         use tempfile::NamedTempFile;
@@ -297,7 +297,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        assert_eq!(region.share_mode, ShareMode::CopyOnWrite);
+        assert_eq!(region.share_mode, ShareMode::Private);
         assert!(region.protection.contains(Protection::READ));
         assert!(region.protection.contains(Protection::WRITE));
         assert!(!region.protection.contains(Protection::EXECUTE));

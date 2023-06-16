@@ -674,10 +674,8 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             let copy_on_write = info.AllocationProtect == PAGE_EXECUTE_WRITECOPY
                 || info.AllocationProtect == PAGE_WRITECOPY;
 
-            let share_mode = if info.Type & MEM_PRIVATE == MEM_PRIVATE {
+            let share_mode = if info.Type & MEM_PRIVATE == MEM_PRIVATE || copy_on_write {
                 ShareMode::Private
-            } else if copy_on_write {
-                ShareMode::CopyOnWrite
             } else {
                 ShareMode::Shared
             };

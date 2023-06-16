@@ -35,8 +35,6 @@ bitflags! {
 pub enum ShareMode {
     /// The memory area is mapped as private.
     Private,
-    /// The memory area is mapped as copy-on-write.
-    CopyOnWrite,
     /// The memory area is mapped as shared.
     Shared,
 }
