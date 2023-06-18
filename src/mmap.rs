@@ -185,7 +185,7 @@ impl TryInto<PageSize> for PageSizes {
     }
 }
 
-macro_rules! mmap_impl {
+macro_rules! reserved_mmap_impl {
     ($t:ident) => {
         impl $t {
             /// Yields a raw immutable pointer of this mapping.
@@ -194,12 +194,46 @@ macro_rules! mmap_impl {
                 self.inner.as_ptr()
             }
 
+            /// Yields a raw mutable pointer of this mapping.
+            #[inline]
+            pub fn as_mut_ptr(&mut self) -> *mut u8 {
+                self.inner.as_mut_ptr()
+            }
+
             /// Yields the size of this mapping.
             #[inline]
             pub fn size(&self) -> usize {
                 self.inner.size()
             }
 
+            /// Splits the bytes into two at the given byte offset. The byte offset must be page
+            /// size aligned.
+            ///
+            /// Afterwards `self` is limited to the range `[0, at)`, and the returning memory
+            /// mapping is limited to `[at, len)`.
+            pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
+                let inner = self.inner.split_off(at)?;
+
+                Ok(Self { inner })
+            }
+
+            /// Splits the bytes into two at the given byte offset. The byte offset must be page
+            /// size aligned.
+            ///
+            /// Afterwards `self` is limited to the range `[at, len)`, and the returning memory
+            /// mapping is limited to `[0, at)`.
+            pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
+                let inner = self.inner.split_to(at)?;
+
+                Ok(Self { inner })
+            }
+        }
+    }
+}
+
+macro_rules! mmap_impl {
+    ($t:ident) => {
+        impl $t {
             /// Locks the physical pages in memory such that accessing the mapping causes no page faults.
             pub fn lock(&mut self) -> Result<(), Error> {
                 self.inner.lock()
@@ -344,28 +378,6 @@ macro_rules! mmap_impl {
 
                 Ok(MmapMut { inner: self.inner })
             }
-
-            /// Splits the bytes into two at the given byte offset. The byte offset must be page
-            /// size aligned.
-            ///
-            /// Afterwards `self` is limited to the range `[0, at)`, and the returning memory
-            /// mapping is limited to `[at, len)`.
-            pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
-                let inner = self.inner.split_off(at)?;
-
-                Ok(Self { inner })
-            }
-
-            /// Splits the bytes into two at the given byte offset. The byte offset must be page
-            /// size aligned.
-            ///
-            /// Afterwards `self` is limited to the range `[at, len)`, and the returning memory
-            /// mapping is limited to `[0, at)`.
-            pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
-                let inner = self.inner.split_to(at)?;
-
-                Ok(Self { inner })
-            }
         }
     };
 }
@@ -377,6 +389,7 @@ pub struct MmapNone {
 }
 
 mmap_impl!(MmapNone);
+reserved_mmap_impl!(MmapNone);
 
 /// Represents an immutable memory mapping.
 #[derive(Debug)]
@@ -385,6 +398,7 @@ pub struct Mmap {
 }
 
 mmap_impl!(Mmap);
+reserved_mmap_impl!(Mmap);
 
 impl Mmap {
     /// Extracts a slice containing the entire mapping.
@@ -417,6 +431,7 @@ pub struct MmapMut {
 }
 
 mmap_impl!(MmapMut);
+reserved_mmap_impl!(MmapMut);
 
 impl MmapMut {
     /// Extracts a slice containing the entire mapping.
@@ -433,12 +448,6 @@ impl MmapMut {
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [u8] {
         &mut self[..]
-    }
-
-    /// Yields a raw mutable pointer to this mapping.
-    #[inline]
-    pub fn as_mut_ptr(&mut self) -> *mut u8 {
-        self.inner.as_mut_ptr()
     }
 }
 
@@ -669,12 +678,6 @@ impl<'a> MmapOptions<'a> {
 macro_rules! reserved_impl {
     ($t:ident) => {
         impl $t {
-            /// Yields a raw immutable pointer of this mapping.
-            #[inline]
-            pub fn as_ptr(&self) -> *const u8 {
-                self.inner.as_ptr()
-            }
-
             /// Returns `true` if the memory mapping is size 0.
             #[inline]
             pub fn is_empty(&self) -> bool {
@@ -684,12 +687,6 @@ macro_rules! reserved_impl {
             /// Yields the length of this mapping.
             #[inline]
             pub fn len(&self) -> usize {
-                self.inner.size()
-            }
-
-            /// Yields the size of this mapping.
-            #[inline]
-            pub fn size(&self) -> usize {
                 self.inner.size()
             }
 
@@ -792,28 +789,6 @@ macro_rules! reserved_impl {
 
                 Ok(ReservedMut { inner: self.inner })
             }
-
-            /// Splits the bytes into two at the given byte offset. The byte offset must be page
-            /// size aligned.
-            ///
-            /// Afterwards `self` is limited to the range `[0, at)`, and the returning memory
-            /// mapping is limited to `[at, len)`.
-            pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
-                let inner = self.inner.split_off(at)?;
-
-                Ok(Self { inner })
-            }
-
-            /// Splits the bytes into two at the given byte offset. The byte offset must be page
-            /// size aligned.
-            ///
-            /// Afterwards `self` is limited to the range `[at, len)`, and the returning memory
-            /// mapping is limited to `[0, at)`.
-            pub fn split_to(&mut self, at: usize) -> Result<Self, Error> {
-                let inner = self.inner.split_to(at)?;
-
-                Ok(Self { inner })
-            }
         }
     };
 }
@@ -826,6 +801,7 @@ pub struct ReservedNone {
 }
 
 reserved_impl!(ReservedNone);
+reserved_mmap_impl!(ReservedNone);
 
 impl TryInto<MmapNone> for ReservedNone {
     type Error = Error;
@@ -845,6 +821,7 @@ pub struct Reserved {
 }
 
 reserved_impl!(Reserved);
+reserved_mmap_impl!(Reserved);
 
 impl TryInto<Mmap> for Reserved {
     type Error = Error;
@@ -864,6 +841,7 @@ pub struct ReservedMut {
 }
 
 reserved_impl!(ReservedMut);
+reserved_mmap_impl!(ReservedMut);
 
 impl TryInto<MmapMut> for ReservedMut {
     type Error = Error;
