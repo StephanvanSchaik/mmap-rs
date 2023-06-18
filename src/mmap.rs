@@ -188,6 +188,18 @@ impl TryInto<PageSize> for PageSizes {
 macro_rules! reserved_mmap_impl {
     ($t:ident) => {
         impl $t {
+            /// Returns the start address of this mapping.
+            #[inline]
+            pub fn start(&self) -> usize {
+                self.inner.as_ptr() as usize
+            }
+
+            /// Returns the end address of this mapping.
+            #[inline]
+            pub fn end(&self) -> usize {
+                self.start() + self.size()
+            }
+
             /// Yields a raw immutable pointer of this mapping.
             #[inline]
             pub fn as_ptr(&self) -> *const u8 {
