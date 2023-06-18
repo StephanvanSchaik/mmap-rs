@@ -123,13 +123,11 @@ where
         optional(path()),
     )
         .map(
-            |(range, _, (protection, share_mode), _, offset, _, _, _, _, _, path)| {
-                MemoryArea {
-                    range,
-                    protection,
-                    share_mode,
-                    path: path.map(|path| (path, offset)),
-                }
+            |(range, _, (protection, share_mode), _, offset, _, _, _, _, _, path)| MemoryArea {
+                range,
+                protection,
+                share_mode,
+                path: path.map(|path| (path, offset)),
             },
         )
 }
