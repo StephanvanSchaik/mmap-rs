@@ -206,8 +206,8 @@ macro_rules! reserved_mmap_impl {
                 self.inner.size()
             }
 
-            /// Splits the bytes into two at the given byte offset. The byte offset must be page
-            /// size aligned.
+            /// Splits the memory map into two at the given byte offset. The byte offset must be
+            /// page size aligned.
             ///
             /// Afterwards `self` is limited to the range `[0, at)`, and the returning memory
             /// mapping is limited to `[at, len)`.
@@ -217,8 +217,8 @@ macro_rules! reserved_mmap_impl {
                 Ok(Self { inner })
             }
 
-            /// Splits the bytes into two at the given byte offset. The byte offset must be page
-            /// size aligned.
+            /// Splits the memory map into two at the given byte offset. The byte offset must be
+            /// page size aligned.
             ///
             /// Afterwards `self` is limited to the range `[at, len)`, and the returning memory
             /// mapping is limited to `[0, at)`.
