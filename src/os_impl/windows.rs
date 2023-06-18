@@ -709,6 +709,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             };
 
             return Some(Ok(MemoryArea {
+                allocation_base: info.AllocationBase as usize,
                 range,
                 protection,
                 share_mode,

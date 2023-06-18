@@ -42,6 +42,8 @@ pub enum ShareMode {
 /// Describes a memory area of a process.
 #[derive(Clone, Debug)]
 pub struct MemoryArea {
+    /// The allocation base of the memory area.
+    pub(crate) allocation_base: usize,
     /// The address range of the memory area.
     pub(crate) range: Range<usize>,
     /// The protection with which the memory area has been mapped.
@@ -53,6 +55,12 @@ pub struct MemoryArea {
 }
 
 impl MemoryArea {
+    /// The allocation base of the memory area.
+    #[inline]
+    pub fn allocation_base(&self) -> usize {
+        self.allocation_base
+    }
+
     /// The address range of the memory area.
     #[inline]
     pub fn range(&self) -> &Range<usize> {

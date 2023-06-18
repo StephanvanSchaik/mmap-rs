@@ -124,6 +124,7 @@ where
     )
         .map(
             |(range, _, (protection, share_mode), _, offset, _, _, _, _, _, path)| MemoryArea {
+                allocation_base: range.start,
                 range,
                 protection,
                 share_mode,
