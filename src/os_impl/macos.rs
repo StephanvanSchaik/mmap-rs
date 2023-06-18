@@ -142,6 +142,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             self.address = self.address.saturating_add(size);
 
             return Some(Ok(MemoryArea {
+                allocation_base: range.start,
                 range,
                 protection,
                 share_mode,
