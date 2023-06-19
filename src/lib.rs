@@ -412,7 +412,7 @@ mod tests {
 
     #[test]
     fn split_and_merge() {
-        use crate::MmapOptions;
+        use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
 
         // Allocate three pages.
         let mut left = MmapOptions::new(3 * MmapOptions::page_size())
@@ -439,7 +439,27 @@ mod tests {
         let Err((_, mut left)) = right.merge(left) else { panic!("expected merge to fail") };
         left.merge(right).unwrap();
 
+        // Ensure the size is correct.
         assert_eq!(left.size(), 3 * MmapOptions::page_size());
+
+        let region = MemoryAreas::query(left.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(region.share_mode, ShareMode::Private);
+        assert!(region.protection.contains(Protection::READ));
+        assert!(region.protection.contains(Protection::WRITE));
+        assert!(!region.protection.contains(Protection::EXECUTE));
+
+        // Ensure that the region we got has the same start address or a lower one.
+        assert!(region.range.start <= left.start());
+
+        // Calculate the actual size from the start address.
+        let padding = left.start().saturating_sub(region.range.start);
+        let size = region.range.len().saturating_sub(padding);
+
+        // Ensure that the region is at least large enough to fully cover our memory mapping.
+        assert!(size >= 3 * MmapOptions::page_size());
     }
 
     #[test]
