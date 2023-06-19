@@ -152,6 +152,16 @@ impl Mmap {
         Ok(())
     }
 
+    pub fn merge(&mut self, other: &Self) -> Result<(), Error> {
+        if self.flags != other.flags {
+            return Err(Error::AttributeMismatch);
+        }
+
+        self.size += other.size;
+
+        Ok(())
+    }
+
     pub fn split_off(&mut self, at: usize) -> Result<Self, Error> {
         if at >= self.size {
             return Err(Error::InvalidOffset);

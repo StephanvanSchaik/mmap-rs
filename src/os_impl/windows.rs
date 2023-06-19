@@ -28,7 +28,7 @@ bitflags! {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct SharedArea {
     ptr: *mut u8,
     flags: SharedFlags,
@@ -215,6 +215,20 @@ impl Mmap {
         }
 
         self.flags |= Flags::COMMITTED;
+
+        Ok(())
+    }
+
+    pub fn merge(&mut self, other: &Self) -> Result<(), Error> {
+        if self.area != other.area {
+            return Err(Error::BackingMismatch);
+        }
+
+        if self.flags != other.flags {
+            return Err(Error::AttributeMismatch);
+        }
+
+        self.size += other.size;
 
         Ok(())
     }
