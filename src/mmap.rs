@@ -250,6 +250,8 @@ macro_rules! reserved_mmap_impl {
                     return Err((e, other));
                 }
 
+                std::mem::forget(other);
+
                 Ok(())
             }
 
