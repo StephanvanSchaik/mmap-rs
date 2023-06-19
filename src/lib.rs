@@ -411,6 +411,38 @@ mod tests {
     }
 
     #[test]
+    fn split_and_merge() {
+        use crate::MmapOptions;
+
+        // Allocate three pages.
+        let mut left = MmapOptions::new(3 * MmapOptions::page_size())
+            .unwrap()
+            .map_mut()
+            .unwrap();
+
+        // Split into left, middle and right.
+        let mut middle = left.split_off(MmapOptions::page_size()).unwrap();
+        let right = middle.split_off(MmapOptions::page_size()).unwrap();
+
+        assert!(left.as_ptr() < middle.as_ptr());
+        assert!(middle.as_ptr() < right.as_ptr());
+
+        // Merging left and right should fail in either order.
+        let Err((_, mut right)) = left.merge(right) else { panic!("expected merge to fail") };
+        let Err((_, left)) = right.merge(left) else { panic!("expected merge to fail") };
+
+        // Merging left and middle should succeed.
+        let Err((_, mut left)) = middle.merge(left) else { panic!("expected merge to fail") };
+        left.merge(middle).unwrap();
+
+        // Merging left and right should succeed.
+        let Err((_, mut left)) = right.merge(left) else { panic!("expected merge to fail") };
+        left.merge(right).unwrap();
+
+        assert_eq!(left.size(), 3 * MmapOptions::page_size());
+    }
+
+    #[test]
     fn query_range() {
         use crate::{MemoryAreas, MmapOptions};
 
