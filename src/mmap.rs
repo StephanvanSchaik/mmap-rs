@@ -1,3 +1,4 @@
+use crate::areas::MemoryAreas;
 use crate::error::Error;
 use bitflags::bitflags;
 use std::fs::File;
@@ -218,6 +219,40 @@ macro_rules! reserved_mmap_impl {
                 self.inner.size()
             }
 
+            /// Merges the memory maps into one. The memory maps must be adjacent to each other and
+            /// share the same attributes and backing. On success, this consumes the other memory map
+            /// object. Otherwise, this returns an error together with the original memory map that
+            /// failed to be merged.
+            pub fn merge(&mut self, other: Self) -> Result<(), (Error, Self)> {
+                // Ensure the memory maps are adjacent.
+                if self.end() != other.start() {
+                    return Err((Error::MustBeAdjacent, other));
+                }
+
+                // Ensure the protection attributes match.
+                let region = match MemoryAreas::query(self.start()) {
+                    Ok(Some(region)) => region,
+                    Ok(None) => return Err((Error::AttributeMismatch, other)),
+                    Err(e) => return Err((e, other)),
+                };
+
+                let other_region = match MemoryAreas::query(other.start()) {
+                    Ok(Some(region)) => region,
+                    Ok(None) => return Err((Error::AttributeMismatch, other)),
+                    Err(e) => return Err((e, other)),
+                };
+
+                if region.protection != other_region.protection {
+                    return Err((Error::AttributeMismatch, other));
+                }
+
+                if let Err(e) = self.inner.merge(&other.inner) {
+                    return Err((e, other));
+                }
+
+                Ok(())
+            }
+
             /// Splits the memory map into two at the given byte offset. The byte offset must be
             /// page size aligned.
             ///
@@ -240,7 +275,7 @@ macro_rules! reserved_mmap_impl {
                 Ok(Self { inner })
             }
         }
-    }
+    };
 }
 
 macro_rules! mmap_impl {

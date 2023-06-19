@@ -22,6 +22,18 @@ pub enum Error {
     #[error("invalid operation")]
     InvalidOperation,
 
+    /// The memory maps must be adjacent.
+    #[error("the memory maps must be adjacent")]
+    MustBeAdjacent,
+
+    /// The attributes of the memory maps do not match.
+    #[error("the memory maps must share the same attributes")]
+    AttributeMismatch,
+
+    /// The backings of the memory maps do not match.
+    #[error("the memory maps must share the same backing")]
+    BackingMismatch,
+
     /// Represents [`std::io::Error`].
     #[error(transparent)]
     Io(#[from] std::io::Error),
