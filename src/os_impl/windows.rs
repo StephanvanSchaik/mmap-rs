@@ -47,7 +47,7 @@ impl Drop for SharedArea {
 #[derive(Debug)]
 pub struct Mmap {
     area: Arc<SharedArea>,
-    ptr: *mut u8,
+    ptr: Option<*mut u8>,
     size: usize,
     flags: Flags,
     protection: PAGE_PROTECTION_FLAGS,
@@ -59,12 +59,12 @@ unsafe impl Sync for Mmap {}
 impl Mmap {
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
-        self.ptr
+        self.ptr.expect("ptr should not be NULL")
     }
 
     #[inline]
     pub fn as_mut_ptr(&mut self) -> *mut u8 {
-        self.ptr
+        self.ptr.expect("ptr should not be NULL")
     }
 
     #[inline]
@@ -74,7 +74,7 @@ impl Mmap {
 
     pub fn lock(&mut self) -> Result<(), Error> {
         let status =
-            unsafe { VirtualLock(self.ptr as *const std::ffi::c_void, self.size) }.as_bool();
+            unsafe { VirtualLock(self.as_ptr() as _, self.size) }.as_bool();
 
         if !status {
             return Err(std::io::Error::last_os_error())?;
@@ -85,7 +85,7 @@ impl Mmap {
 
     pub fn unlock(&mut self) -> Result<(), Error> {
         let status =
-            unsafe { VirtualUnlock(self.ptr as *const std::ffi::c_void, self.size) }.as_bool();
+            unsafe { VirtualUnlock(self.as_ptr() as _, self.size) }.as_bool();
 
         if !status {
             return Err(std::io::Error::last_os_error())?;
@@ -107,7 +107,7 @@ impl Mmap {
 
         let status = unsafe {
             FlushViewOfFile(
-                self.ptr.add(range.start) as *const std::ffi::c_void,
+                self.as_ptr().add(range.start) as _,
                 range.end - range.start,
             )
         }
@@ -125,7 +125,7 @@ impl Mmap {
 
         let status = unsafe {
             VirtualProtect(
-                self.ptr as *mut std::ffi::c_void,
+                self.as_mut_ptr() as _,
                 self.size,
                 protect,
                 &mut old_protect,
@@ -152,7 +152,7 @@ impl Mmap {
         unsafe {
             FlushInstructionCache(
                 GetCurrentProcess(),
-                Some(self.ptr as *const std::ffi::c_void),
+                Some(self.as_ptr() as _),
                 self.size,
             )
         };
@@ -202,7 +202,7 @@ impl Mmap {
         if !self.area.flags.contains(SharedFlags::FILE) {
             let ptr = unsafe {
                 VirtualAlloc(
-                    Some(self.ptr as *mut std::ffi::c_void),
+                    self.ptr.map(|ptr| ptr as _),
                     self.size,
                     MEM_COMMIT,
                     self.protection,
@@ -242,7 +242,7 @@ impl Mmap {
             return Err(Error::InvalidOffset);
         }
 
-        let ptr = unsafe { self.ptr.add(at) };
+        let ptr = unsafe { self.ptr.map(|ptr| ptr.add(at)) };
         let size = self.size - at;
         self.size = at;
 
@@ -265,7 +265,7 @@ impl Mmap {
         }
 
         let ptr = self.ptr;
-        self.ptr = unsafe { self.ptr.add(at) };
+        self.ptr = unsafe { self.ptr.map(|ptr| ptr.add(at)) };
         let size = at;
         self.size -= at;
 
@@ -277,18 +277,34 @@ impl Mmap {
             protection: self.protection,
         })
     }
+
+    pub fn from_raw(ptr: *mut u8, size: usize) -> Result<Self, Error> {
+        Ok(Self {
+            ptr: Some(ptr),
+            size,
+            flags: Flags::empty(),
+        })
+    }
+
+    pub fn into_raw(mut self) -> (*mut u8, usize) {
+        let ptr = self.ptr.take().expect("ptr should not be NULL");
+
+        (ptr, self.size)
+    }
 }
 
 impl Drop for Mmap {
     fn drop(&mut self) {
         if self.flags.contains(Flags::COMMITTED) {
-            let _ = unsafe {
-                VirtualFree(
-                    self.ptr as *mut _,
-                    self.size,
-                    VIRTUAL_FREE_TYPE(MEM_DECOMMIT.0),
-                )
-            };
+            if let Some(ptr) = self.ptr {
+                let _ = unsafe {
+                    VirtualFree(
+                        ptr as *mut _,
+                        self.size,
+                        VIRTUAL_FREE_TYPE(MEM_DECOMMIT.0),
+                    )
+                };
+            }
         }
     }
 }
@@ -540,7 +556,7 @@ impl<'a> MmapOptions<'a> {
 
         Ok(Mmap {
             area,
-            ptr: ptr as *mut u8,
+            ptr: Some(ptr as *mut u8),
             size,
             flags,
             protection,

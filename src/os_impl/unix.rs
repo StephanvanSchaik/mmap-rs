@@ -30,7 +30,7 @@ bitflags! {
 
 #[derive(Debug)]
 pub struct Mmap {
-    ptr: *mut u8,
+    ptr: Option<*mut u8>,
     size: usize,
     flags: Flags,
 }
@@ -41,12 +41,12 @@ unsafe impl Sync for Mmap {}
 impl Mmap {
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
-        self.ptr
+        self.ptr.expect("ptr should not be NULL")
     }
 
     #[inline]
     pub fn as_mut_ptr(&self) -> *mut u8 {
-        self.ptr
+        self.ptr.expect("ptr should not be NULL")
     }
 
     #[inline]
@@ -56,7 +56,7 @@ impl Mmap {
 
     pub fn lock(&mut self) -> Result<(), Error> {
         unsafe {
-            mlock(self.ptr as *const std::ffi::c_void, self.size)?;
+            mlock(self.as_ptr() as _, self.size)?;
         }
 
         Ok(())
@@ -64,7 +64,7 @@ impl Mmap {
 
     pub fn unlock(&mut self) -> Result<(), Error> {
         unsafe {
-            munlock(self.ptr as *const std::ffi::c_void, self.size)?;
+            munlock(self.as_ptr() as _, self.size)?;
         }
 
         Ok(())
@@ -73,7 +73,7 @@ impl Mmap {
     pub fn flush(&self, range: Range<usize>) -> Result<(), Error> {
         unsafe {
             msync(
-                self.ptr.add(range.start) as *mut std::ffi::c_void,
+                self.as_ptr().add(range.start) as *mut std::ffi::c_void,
                 range.end - range.start,
                 MsFlags::MS_SYNC,
             )
@@ -85,7 +85,7 @@ impl Mmap {
     pub fn flush_async(&self, range: Range<usize>) -> Result<(), Error> {
         unsafe {
             msync(
-                self.ptr.add(range.start) as *mut std::ffi::c_void,
+                self.as_ptr().add(range.start) as *mut std::ffi::c_void,
                 range.end - range.start,
                 MsFlags::MS_ASYNC,
             )
@@ -96,7 +96,7 @@ impl Mmap {
 
     #[cfg(target_os = "ios")]
     pub fn flush_icache(&self) -> Result<(), Error> {
-        unsafe { sys_icache_invalidate(self.ptr as *mut std::ffi::c_void, self.size as usize) };
+        unsafe { sys_icache_invalidate(self.as_mut_ptr() as _, self.size as usize) };
 
         Ok(())
     }
@@ -105,8 +105,8 @@ impl Mmap {
     pub fn flush_icache(&self) -> Result<(), Error> {
         unsafe {
             __clear_cache(
-                self.ptr as *mut std::ffi::c_void,
-                self.ptr.add(self.size) as *mut std::ffi::c_void,
+                self.as_mut_ptr() as _,
+                self.as_mut_ptr().add(self.size) as _
             )
         };
 
@@ -114,11 +114,11 @@ impl Mmap {
     }
 
     fn do_make(&mut self, protect: ProtFlags) -> Result<(), Error> {
-        let ptr = self.ptr as *const u8;
+        let ptr = self.as_mut_ptr();
         let size = self.size;
 
         unsafe {
-            mprotect(ptr as *mut std::ffi::c_void, size, protect)?;
+            mprotect(ptr as _, size, protect)?;
         }
 
         Ok(())
@@ -171,7 +171,7 @@ impl Mmap {
             return Err(Error::InvalidOffset);
         }
 
-        let ptr = unsafe { self.ptr.add(at) };
+        let ptr = unsafe { self.ptr.map(|ptr| ptr.add(at)) };
         let size = self.size - at;
         self.size = at;
 
@@ -192,7 +192,7 @@ impl Mmap {
         }
 
         let ptr = self.ptr;
-        self.ptr = unsafe { self.ptr.add(at) };
+        self.ptr = unsafe { self.ptr.map(|ptr| ptr.add(at)) };
         let size = at;
         self.size -= at;
 
@@ -202,11 +202,27 @@ impl Mmap {
             flags: self.flags,
         })
     }
+
+    pub fn from_raw(ptr: *mut u8, size: usize) -> Result<Self, Error> {
+        Ok(Self {
+            ptr: Some(ptr),
+            size,
+            flags: Flags::empty(),
+        })
+    }
+
+    pub fn into_raw(mut self) -> (*mut u8, usize) {
+        let ptr = self.ptr.take().expect("ptr should not be NULL");
+
+        (ptr, self.size)
+    }
 }
 
 impl Drop for Mmap {
     fn drop(&mut self) {
-        let _ = unsafe { munmap(self.ptr as *mut _, self.size) };
+        if let Some(ptr) = self.ptr {
+            let _ = unsafe { munmap(ptr as *mut _, self.size) };
+        }
     }
 }
 
@@ -409,7 +425,7 @@ impl<'a> MmapOptions<'a> {
         }
 
         Ok(Mmap {
-            ptr: ptr as *mut u8,
+            ptr: Some(ptr as *mut u8),
             size: size.get(),
             flags,
         })
