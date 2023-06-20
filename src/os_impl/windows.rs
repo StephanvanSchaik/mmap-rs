@@ -12,7 +12,7 @@ use windows::Win32::Foundation::{CloseHandle, HANDLE, MAX_PATH};
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
 use windows::Win32::System::Diagnostics::Debug::FlushInstructionCache;
 use windows::Win32::System::Memory::*;
-use windows::Win32::System::ProcessStatus::K32GetMappedFileNameW;
+use windows::Win32::System::ProcessStatus::GetMappedFileNameW;
 use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
 use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcess, PROCESS_ALL_ACCESS};
 
@@ -37,7 +37,7 @@ pub struct SharedArea {
 impl Drop for SharedArea {
     fn drop(&mut self) {
         if self.flags.contains(SharedFlags::FILE) {
-            let _ = unsafe { UnmapViewOfFile(self.ptr as *mut _) };
+            let _ = unsafe { UnmapViewOfFile(MEMORYMAPPEDVIEW_HANDLE(self.ptr as isize)) };
         } else {
             let _ = unsafe { VirtualFree(self.ptr as *mut _, 0, VIRTUAL_FREE_TYPE(MEM_RELEASE.0)) };
         }
@@ -477,14 +477,14 @@ impl<'a> MmapOptions<'a> {
                     size,
                     None,
                 )
-            };
+            }?.0 as *mut u8;
 
             unsafe { CloseHandle(file_mapping) };
 
             let mut old_protect = PAGE_PROTECTION_FLAGS::default();
 
             let status =
-                unsafe { VirtualProtect(ptr, size, protection, &mut old_protect) }.as_bool();
+                unsafe { VirtualProtect(ptr as _, size, protection, &mut old_protect) }.as_bool();
 
             if !status {
                 return Err(std::io::Error::last_os_error())?;
@@ -502,7 +502,7 @@ impl<'a> MmapOptions<'a> {
                 flags |= MEM_LARGE_PAGES;
             }
 
-            unsafe {
+            (unsafe {
                 VirtualAlloc(
                     self.address
                         .map(|address| address as *const std::ffi::c_void),
@@ -510,7 +510,7 @@ impl<'a> MmapOptions<'a> {
                     flags,
                     protection,
                 )
-            }
+            }) as *mut u8
         };
 
         if ptr.is_null() {
@@ -534,13 +534,13 @@ impl<'a> MmapOptions<'a> {
         }
 
         let area = Arc::new(SharedArea {
-            ptr: ptr as *mut u8,
+            ptr,
             flags: shared_flags,
         });
 
         Ok(Mmap {
             area,
-            ptr: ptr as *mut u8,
+            ptr,
             size,
             flags,
             protection,
@@ -708,7 +708,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
             let mut name = vec![0u16; MAX_PATH as usize];
 
             let name_size = unsafe {
-                K32GetMappedFileNameW(self.handle, address as *const std::ffi::c_void, &mut name)
+                GetMappedFileNameW(self.handle, address as *const std::ffi::c_void, &mut name)
             };
 
             let path = if name_size != 0 {

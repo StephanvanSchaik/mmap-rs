@@ -16,6 +16,7 @@ All notable changes to mmap-rs will be documented in this file.
 - Fixed an issue where `MemoryAreas::query()` and related functions returned the wrong `ShareMode`.
 - Removed `ShareMode::CopyOnWrite` and use `ShareMode::Private` instead.
 - Extended `MemoryAreas::query()` to return the allocation base of the memory mapping.
+- Updated the windows crate from version 0.44 to 0.48.
 
 ## 0.5.0
 
