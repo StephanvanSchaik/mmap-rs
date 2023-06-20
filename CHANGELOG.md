@@ -4,27 +4,30 @@ All notable changes to mmap-rs will be documented in this file.
 
 ## 0.6.0
 
-- Add `MemoryAreas::query()` and related functions to query a specific address or address range 
-- Add `Mmap::split_off()` and related functions to split an existing memory mapping at a page boundary.
-- Add `MmapOptions::reserve()` and related functions to reserve memory mappings instead of committing them.
-- Change `MmapOptions::with_file()` to require a reference to the file instead of taking ownership instead.
-- Document flags that may have no operation on platforms that do not support the flag, such as `MmapFlags::STACK` on Microsoft Windows.
-- Use `mach_vm_region_recurse()` on MacOS to recurse into submappings.
-- Change `MmapFlags::COPY_ON_WRITE` to `MmapFlags::SHARED`, such that private memory mappings are the default and since copy-on-write semantics only make sense for file mappings.
-- Fix issue where `MemoryAreas::query()` and related functions returned the wrong `ShareMode`.
-- Remove `ShareMode::CopyOnWrite` and use `ShareMode::Private` instead.
+- Implemented `Debug` for all public types.
+- Added `MemoryAreas::query()` and related functions to query a specific address or address range 
+- Added `Mmap::split_off()` and related functions to split an existing memory mapping at a page boundary.
+- Added `Mmap::merge()` to merge adjacent memory mappings into one.
+- Added `MmapOptions::reserve()` and related functions to reserve memory mappings instead of committing them.
+- Changed `MmapOptions::with_file()` to require a reference to the file instead of taking ownership instead.
+- Documented flags that may have no operation on platforms that do not support the flag, such as `MmapFlags::STACK` on Microsoft Windows.
+- Changed `MemoryAreas::query()` to use `mach_vm_region_recurse()` on MacOS to recurse into submappings.
+- Changed `MmapFlags::COPY_ON_WRITE` to `MmapFlags::SHARED`, such that private memory mappings are the default and since copy-on-write semantics only make sense for file mappings.
+- Fixed an issue where `MemoryAreas::query()` and related functions returned the wrong `ShareMode`.
+- Removed `ShareMode::CopyOnWrite` and use `ShareMode::Private` instead.
+- Extended `MemoryAreas::query()` to return the allocation base of the memory mapping.
 
 ## 0.5.0
 
-- Implement `MmapOptions::page_sizes()` to return the supported page sizes for the platform.
-- Separate the functions to get the page size and the allocation granularity.
-- Updated windows crate from version 0.39 to 0.44.
+- Implemented `MmapOptions::page_sizes()` to return the supported page sizes for the platform.
+- Separated the functions to get the page size and the allocation granularity.
+- Updated the windows crate from version 0.39 to 0.44.
 - Changed `MmapOptions::new()` to return `Result<Self, Error>` rather than `Self` to support the use of `NonZeroUsize` in nix.
-- Updated nix crate from version 0.24 to 0.26.
+- Updated the nix crate from version 0.24 to 0.26.
 - Added support for `i686-linux-android`, `aarch64-linux-android`, `x86_64-linux-android` and `armv7-linux-androideabi`.
 - Added `MapFlags::TRANSPARENT_HUGE_PAGES` to hint the kernel that it may merge pages within the mapping into huge pages if possible when set to `madvise` mode.
 - `MmapOptions::with_flags()` appends the flags instead of overriding them.
-- Implement `Send` and `Sync` for `Mmap`.
+- Implemented `Send` and `Sync` for `Mmap`.
 
 ## 0.4.0
 
