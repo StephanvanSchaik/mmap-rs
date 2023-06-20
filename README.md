@@ -54,5 +54,5 @@ Tier 3 (no CI, but should work):
 - [x] Stack support (also known as `MAP_STACK` on Unix).
 - [x] Support to exclude memory maps from core dumps (on Unix only).
 - [x] Reserve memory mappings, rather than directly committing them.
-- [x] Split memory mappings.
+- [x] Split and merge memory mappings.
 - [x] Query the memory areas of the current/a given process (for a given address or address range).
