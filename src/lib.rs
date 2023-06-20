@@ -442,9 +442,7 @@ mod tests {
         // Ensure the size is correct.
         assert_eq!(left.size(), 3 * MmapOptions::page_size());
 
-        let region = MemoryAreas::query(left.as_ptr() as usize)
-            .unwrap()
-            .unwrap();
+        let region = MemoryAreas::query(left.as_ptr() as usize).unwrap().unwrap();
 
         assert_eq!(region.share_mode, ShareMode::Private);
         assert!(region.protection.contains(Protection::READ));
