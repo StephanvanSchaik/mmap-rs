@@ -22,6 +22,8 @@ jobs:
       run: cargo build
     - name: Run tests
       run: cargo test
+    - name: Verify MSRV
+      run: cargo install cargo-msrv && cargo msrv verify
 
   cross-windows:
     runs-on: windows-2019
@@ -107,6 +109,7 @@ jobs:
           . "$HOME/.cargo/env"
           cargo build
           cargo test
+          cargo install cargo-msrv && cargo msrv verify
 
   android:
     runs-on: ubuntu-latest
