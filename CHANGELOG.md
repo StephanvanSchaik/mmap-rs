@@ -2,6 +2,10 @@
 
 All notable changes to mmap-rs will be documented in this file.
 
+## 0.6.1
+
+- Added the MSRV (1.67.1).
+
 ## 0.6.0
 
 - Implemented `Debug` for all public types.
