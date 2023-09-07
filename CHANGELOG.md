@@ -12,7 +12,7 @@ All notable changes to mmap-rs will be documented in this file.
 - Changed `MmapOptions::with_file()` to require a reference to the file instead of taking ownership instead.
 - Documented flags that may have no operation on platforms that do not support the flag, such as `MmapFlags::STACK` on Microsoft Windows.
 - Changed `MemoryAreas::query()` to use `mach_vm_region_recurse()` on MacOS to recurse into submappings.
-- Changed `MmapFlags::COPY_ON_WRITE` to `MmapFlags::SHARED`, such that private memory mappings are the default and since copy-on-write semantics only make sense for file mappings.
+- Changed `MmapFlags::COPY_ON_WRITE` to `MmapFlags::PRIVATE`, such that private memory mappings are the default and since copy-on-write semantics only make sense for file mappings.
 - Fixed an issue where `MemoryAreas::query()` and related functions returned the wrong `ShareMode`.
 - Removed `ShareMode::CopyOnWrite` and use `ShareMode::Private` instead.
 - Extended `MemoryAreas::query()` to return the allocation base of the memory mapping.
