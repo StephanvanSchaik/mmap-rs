@@ -722,6 +722,26 @@ impl<'a> MmapOptions<'a> {
             inner: self.inner.map_exec_mut()?,
         })
     }
+
+    /// Creates a mapping from an existing address/size combination.
+    /// Before calling this, call [`Mmap::with_address()`] to set an address.
+    /// 
+    /// # Returns
+    /// 
+    /// An error if an address was not previously specified with a call to [`Mmap::with_address()`]
+    /// 
+    /// # Remarks
+    /// 
+    /// This function 'takes ownership' of an existing mapping. This means that the mapping will
+    /// be dropped when the returned object is dropped. i.e. munmap/VirtualFree/<YOUR_PLATFORM_EQUIVALENT>
+    /// will be called when the item is dropped.
+    /// 
+    /// If you want to avoid freeing, please call [`core::mem::forget`] on the resulting object.
+    pub unsafe fn map_from_existing(self) -> Result<MmapMut, Error> {
+        Ok(MmapMut {
+            inner: self.inner.map_from_existing()?,
+        })
+    }
 }
 
 macro_rules! reserved_impl {

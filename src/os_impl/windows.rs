@@ -618,6 +618,43 @@ impl<'a> MmapOptions<'a> {
 
         self.do_map(protect, Flags::COMMITTED)
     }
+
+    pub unsafe fn map_from_existing(self) -> Result<Mmap, Error> {
+
+        let addr = self.address;
+        if addr.is_none() {
+            return Err(Error::MissingAddressForExistingMap);
+        }
+
+        let mut flags = Flags::COMMITTED;
+        let size = self.size;
+
+        if !self.flags.contains(MmapFlags::SHARED) {
+            flags |= Flags::COPY_ON_WRITE;
+        }
+
+        if self.unsafe_flags.contains(UnsafeMmapFlags::JIT) {
+            flags |= Flags::JIT;
+        }
+
+        let mut shared_flags = SharedFlags::empty();
+        if self.file.is_some() {
+            shared_flags |= SharedFlags::FILE;
+        }
+
+        let area = Arc::new(SharedArea {
+            ptr: addr.unwrap_unchecked() as *mut u8,
+            flags: shared_flags,
+        });
+
+        Ok(Mmap {
+            area,
+            ptr: addr.unwrap_unchecked() as *mut u8,
+            size,
+            flags,
+            protection: PAGE_PROTECTION_FLAGS::default(), // unknown
+        })
+    }
 }
 
 use std::io::{BufRead, BufReader};
