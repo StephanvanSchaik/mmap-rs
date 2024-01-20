@@ -9,8 +9,7 @@ use mach2::{
     vm_inherit::VM_INHERIT_SHARE,
     vm_prot::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE},
     vm_region::{
-        vm_region_recurse_info_t, vm_region_submap_info_64, SM_COW, SM_PRIVATE_ALIASED, SM_SHARED,
-        SM_SHARED_ALIASED, SM_TRUESHARED,
+        vm_region_recurse_info_t, vm_region_submap_info_64
     },
     vm_types::mach_vm_address_t,
 };
@@ -35,7 +34,7 @@ impl MemoryAreas<BufReader<File>> {
         let task = unsafe { mach_task_self() };
 
         if let Some(pid) = pid {
-            let result = unsafe { task_for_pid(task, pid as i32, std::mem::transmute(&task)) };
+            let result = unsafe { task_for_pid(task, pid as i32, &task as *const u32 as *mut u32) };
 
             if result != KERN_SUCCESS {
                 return Err(Error::Mach(result));
