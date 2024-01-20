@@ -45,10 +45,20 @@ bitflags! {
         /// pages.
         const LOCKED                 = 1 << 6;
 
-        /// Suggest to use transparent huge pages for this allocation by calling madvise().
+        /// Suggest to use transparent huge pages for this allocation by calling `madvise()`.
         ///
         /// This flag acts as a no-op on platforms that do not support this feature.
         const TRANSPARENT_HUGE_PAGES = 1 << 7;
+
+        /// Suggest that the mapped region will be accessed sequentially by calling `madvise()`.
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
+        const SEQUENTIAL = 1 << 8;
+
+        /// Suggest that the mapped region will be accessed randomly by calling `madvise()`.
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
+        const RANDOM_ACCESS = 1 << 9;
     }
 
     /// The available flags to configure the allocated mapping, but that are considered unsafe to
