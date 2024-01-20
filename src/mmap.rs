@@ -351,7 +351,9 @@ macro_rules! mmap_impl {
 
             /// Remaps this memory mapping as immutable.
             ///
-            /// In case of failure, this returns the ownership of `self`.
+            /// In case of failure, this returns the ownership of `self`. If you are
+            /// not interested in this feature, you can use the implementation of
+            /// the [`TryFrom`] trait instead.
             pub fn make_read_only(mut self) -> Result<Mmap, (Self, Error)> {
                 if let Err(e) = self.inner.make_read_only() {
                     return Err((self, e));
@@ -396,7 +398,9 @@ macro_rules! mmap_impl {
 
             /// Remaps this mapping to be mutable.
             ///
-            /// In case of failure, this returns the ownership of `self`.
+            /// In case of failure, this returns the ownership of `self`. If you are
+            /// not interested in this feature, you can use the implementation of
+            /// the [`TryFrom`] trait instead.
             pub fn make_mut(mut self) -> Result<MmapMut, (Self, Error)> {
                 if let Err(e) = self.inner.make_mut() {
                     return Err((self, e));
@@ -483,6 +487,26 @@ impl AsRef<[u8]> for Mmap {
     }
 }
 
+impl TryFrom<MmapMut> for Mmap {
+    type Error = Error;
+    fn try_from(mmap_mut: MmapMut) -> Result<Self, Self::Error> {
+        match mmap_mut.make_read_only() {
+            Ok(mmap) => Ok(mmap),
+            Err((_, e)) => Err(e),
+        }
+    }
+}
+
+impl TryFrom<MmapNone> for Mmap {
+    type Error = Error;
+    fn try_from(mmap_none: MmapNone) -> Result<Self, Self::Error> {
+        match mmap_none.make_read_only() {
+            Ok(mmap) => Ok(mmap),
+            Err((_, e)) => Err(e),
+        }
+    }
+}
+
 /// Represents a mutable memory mapping.
 #[derive(Debug)]
 pub struct MmapMut {
@@ -507,6 +531,26 @@ impl MmapMut {
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [u8] {
         &mut self[..]
+    }
+}
+
+impl TryFrom<Mmap> for MmapMut {
+    type Error = Error;
+    fn try_from(mmap: Mmap) -> Result<Self, Self::Error> {
+        match mmap.make_mut() {
+            Ok(mmap_mut) => Ok(mmap_mut),
+            Err((_, e)) => Err(e),
+        }
+    }
+}
+
+impl TryFrom<MmapNone> for MmapMut {
+    type Error = Error;
+    fn try_from(mmap_none: MmapNone) -> Result<Self, Self::Error> {
+        match mmap_none.make_mut() {
+            Ok(mmap_mut) => Ok(mmap_mut),
+            Err((_, e)) => Err(e),
+        }
     }
 }
 
