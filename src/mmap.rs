@@ -184,15 +184,15 @@ impl PageSize {
     pub const _16G: Self = Self(34);
 }
 
-impl TryInto<PageSize> for PageSizes {
+impl TryFrom<PageSizes> for PageSize {
     type Error = Error;
 
-    fn try_into(self) -> Result<PageSize, Error> {
-        if self.bits().count_ones() != 1 {
+    fn try_from(page_sizes: PageSizes) -> Result<PageSize, Error> {
+        if page_sizes.bits().count_ones() != 1 {
             return Err(Error::InvalidSize);
         }
 
-        Ok(PageSize(self.bits()))
+        Ok(PageSize(page_sizes.bits()))
     }
 }
 
@@ -795,7 +795,9 @@ macro_rules! reserved_impl {
 
             /// Remaps this memory mapping as inaccessible.
             ///
-            /// In case of failure, this returns the ownership of `self`.
+            /// In case of failure, this returns the ownership of `self`. If you are
+            /// not interested in this feature, you can use the implementation of
+            /// the [`TryFrom`] trait instead.
             pub fn make_none(mut self) -> Result<ReservedNone, (Self, Error)> {
                 if let Err(e) = self.inner.make_none() {
                     return Err((self, e));
@@ -806,7 +808,9 @@ macro_rules! reserved_impl {
 
             /// Remaps this memory mapping as immutable.
             ///
-            /// In case of failure, this returns the ownership of `self`.
+            /// In case of failure, this returns the ownership of `self`. If you are
+            /// not interested in this feature, you can use the implementation of
+            /// the [`TryFrom`] trait instead.
             pub fn make_read_only(mut self) -> Result<Reserved, (Self, Error)> {
                 if let Err(e) = self.inner.make_read_only() {
                     return Err((self, e));
@@ -851,7 +855,9 @@ macro_rules! reserved_impl {
 
             /// Remaps this mapping to be mutable.
             ///
-            /// In case of failure, this returns the ownership of `self`.
+            /// In case of failure, this returns the ownership of `self`. If you are
+            /// not interested in this feature, you can use the implementation of
+            /// the [`TryFrom`] trait instead.
             pub fn make_mut(mut self) -> Result<ReservedMut, (Self, Error)> {
                 if let Err(e) = self.inner.make_mut() {
                     return Err((self, e));
@@ -906,15 +912,36 @@ pub struct ReservedNone {
 reserved_impl!(ReservedNone);
 reserved_mmap_impl!(ReservedNone);
 
-impl TryInto<MmapNone> for ReservedNone {
+impl TryFrom<ReservedNone> for MmapNone {
     type Error = Error;
 
-    fn try_into(mut self) -> Result<MmapNone, Error> {
-        self.inner.commit()?;
+    fn try_from(mut reserved_none: ReservedNone) -> Result<MmapNone, Error> {
+        reserved_none.inner.commit()?;
 
-        Ok(MmapNone { inner: self.inner })
+        Ok(MmapNone { inner: reserved_none.inner })
     }
 }
+
+impl TryFrom<ReservedMut> for Reserved {
+    type Error = Error;
+    fn try_from(mmap_mut: ReservedMut) -> Result<Self, Self::Error> {
+        match mmap_mut.make_read_only() {
+            Ok(mmap) => Ok(mmap),
+            Err((_, e)) => Err(e),
+        }
+    }
+}
+
+impl TryFrom<ReservedNone> for Reserved {
+    type Error = Error;
+    fn try_from(mmap_none: ReservedNone) -> Result<Self, Self::Error> {
+        match mmap_none.make_read_only() {
+            Ok(mmap) => Ok(mmap),
+            Err((_, e)) => Err(e),
+        }
+    }
+}
+
 
 /// Represents an immutable memory mapping in a reserved state, i.e. a memory mapping that is not
 /// backed by any physical pages yet.
@@ -926,13 +953,13 @@ pub struct Reserved {
 reserved_impl!(Reserved);
 reserved_mmap_impl!(Reserved);
 
-impl TryInto<Mmap> for Reserved {
+impl TryFrom<Reserved> for Mmap {
     type Error = Error;
 
-    fn try_into(mut self) -> Result<Mmap, Error> {
-        self.inner.commit()?;
+    fn try_from(mut reserved: Reserved) -> Result<Mmap, Error> {
+        reserved.inner.commit()?;
 
-        Ok(Mmap { inner: self.inner })
+        Ok(Mmap { inner: reserved.inner })
     }
 }
 
@@ -946,12 +973,32 @@ pub struct ReservedMut {
 reserved_impl!(ReservedMut);
 reserved_mmap_impl!(ReservedMut);
 
-impl TryInto<MmapMut> for ReservedMut {
+impl TryFrom<ReservedMut> for MmapMut {
     type Error = Error;
 
-    fn try_into(mut self) -> Result<MmapMut, Error> {
-        self.inner.commit()?;
+    fn try_from(mut reserved_mut: ReservedMut) -> Result<MmapMut, Error> {
+        reserved_mut.inner.commit()?;
 
-        Ok(MmapMut { inner: self.inner })
+        Ok(MmapMut { inner: reserved_mut.inner })
+    }
+}
+
+impl TryFrom<Reserved> for ReservedMut {
+    type Error = Error;
+    fn try_from(mmap: Reserved) -> Result<Self, Self::Error> {
+        match mmap.make_mut() {
+            Ok(mmap_mut) => Ok(mmap_mut),
+            Err((_, e)) => Err(e),
+        }
+    }
+}
+
+impl TryFrom<ReservedNone> for ReservedMut {
+    type Error = Error;
+    fn try_from(mmap_none: ReservedNone) -> Result<Self, Self::Error> {
+        match mmap_none.make_mut() {
+            Ok(mmap_mut) => Ok(mmap_mut),
+            Err((_, e)) => Err(e),
+        }
     }
 }
