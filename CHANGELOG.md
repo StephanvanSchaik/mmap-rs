@@ -4,6 +4,7 @@ All notable changes to mmap-rs will be documented in this file.
 
 ## 0.6.1
 
+- Implemented `TryFrom` for `Mmap` and `Reserved` objects for improved ergonomics.
 - Added the MSRV (1.67).
 
 ## 0.6.0
