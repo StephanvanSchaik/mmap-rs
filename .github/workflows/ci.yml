@@ -85,17 +85,18 @@ jobs:
       run: cargo test
 
   freebsd:
-    runs-on: macos-12
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         os:
-        - release: '13.1'
-        - release: '12.3'
+        - release: '14.0'
+        - release: '13.2'
+        - release: '12.4'
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Build (freebsd-${{ matrix.os.release }})
-      uses: vmactions/freebsd-vm@v0
+      uses: vmactions/freebsd-vm@v1
       with:
         release: ${{ matrix.os.release }}
         envs: 'RUSTFLAGS'
