@@ -326,7 +326,7 @@ impl<'a> MmapOptions<'a> {
             };
         }
 
-        #[cfg(any(target_os = "freebsd"))]
+        #[cfg(target_os = "freebsd")]
         if self.flags.contains(MmapFlags::HUGE_PAGES) {
             flags |= MapFlags::MAP_ALIGNED_SUPER;
         }
@@ -390,6 +390,16 @@ impl<'a> MmapOptions<'a> {
         #[cfg(any(target_os = "android", target_os = "linux"))]
         if self.flags.contains(MmapFlags::TRANSPARENT_HUGE_PAGES) {
             unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_HUGEPAGE) }?;
+        }
+
+        #[cfg(any(target_os = "android", target_os = "linux"))]
+        if self.flags.contains(MmapFlags::SEQUENTIAL) {
+            unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_SEQUENTIAL) }?;
+        }
+
+        #[cfg(any(target_os = "android", target_os = "linux"))]
+        if self.flags.contains(MmapFlags::RANDOM_ACCESS) {
+            unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_RANDOM) }?;
         }
 
         #[cfg(any(target_os = "dragonfly", target_os = "freebsd"))]
