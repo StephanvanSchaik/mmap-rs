@@ -428,15 +428,23 @@ mod tests {
         assert!(middle.as_ptr() < right.as_ptr());
 
         // Merging left and right should fail in either order.
-        let Err((_, mut right)) = left.merge(right) else { panic!("expected merge to fail") };
-        let Err((_, left)) = right.merge(left) else { panic!("expected merge to fail") };
+        let Err((_, mut right)) = left.merge(right) else {
+            panic!("expected merge to fail")
+        };
+        let Err((_, left)) = right.merge(left) else {
+            panic!("expected merge to fail")
+        };
 
         // Merging left and middle should succeed.
-        let Err((_, mut left)) = middle.merge(left) else { panic!("expected merge to fail") };
+        let Err((_, mut left)) = middle.merge(left) else {
+            panic!("expected merge to fail")
+        };
         left.merge(middle).unwrap();
 
         // Merging left and right should succeed.
-        let Err((_, mut left)) = right.merge(left) else { panic!("expected merge to fail") };
+        let Err((_, mut left)) = right.merge(left) else {
+            panic!("expected merge to fail")
+        };
         left.merge(right).unwrap();
 
         // Ensure the size is correct.

@@ -8,9 +8,7 @@ use mach2::{
     vm::mach_vm_region_recurse,
     vm_inherit::VM_INHERIT_SHARE,
     vm_prot::{VM_PROT_EXECUTE, VM_PROT_READ, VM_PROT_WRITE},
-    vm_region::{
-        vm_region_recurse_info_t, vm_region_submap_info_64
-    },
+    vm_region::{vm_region_recurse_info_t, vm_region_submap_info_64},
     vm_types::mach_vm_address_t,
 };
 use nix::unistd::getpid;

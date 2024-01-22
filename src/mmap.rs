@@ -918,7 +918,9 @@ impl TryFrom<ReservedNone> for MmapNone {
     fn try_from(mut reserved_none: ReservedNone) -> Result<MmapNone, Error> {
         reserved_none.inner.commit()?;
 
-        Ok(MmapNone { inner: reserved_none.inner })
+        Ok(MmapNone {
+            inner: reserved_none.inner,
+        })
     }
 }
 
@@ -942,7 +944,6 @@ impl TryFrom<ReservedNone> for Reserved {
     }
 }
 
-
 /// Represents an immutable memory mapping in a reserved state, i.e. a memory mapping that is not
 /// backed by any physical pages yet.
 #[derive(Debug)]
@@ -959,7 +960,9 @@ impl TryFrom<Reserved> for Mmap {
     fn try_from(mut reserved: Reserved) -> Result<Mmap, Error> {
         reserved.inner.commit()?;
 
-        Ok(Mmap { inner: reserved.inner })
+        Ok(Mmap {
+            inner: reserved.inner,
+        })
     }
 }
 
@@ -979,7 +982,9 @@ impl TryFrom<ReservedMut> for MmapMut {
     fn try_from(mut reserved_mut: ReservedMut) -> Result<MmapMut, Error> {
         reserved_mut.inner.commit()?;
 
-        Ok(MmapMut { inner: reserved_mut.inner })
+        Ok(MmapMut {
+            inner: reserved_mut.inner,
+        })
     }
 }
 

@@ -477,7 +477,8 @@ impl<'a> MmapOptions<'a> {
                     size,
                     None,
                 )
-            }?.0 as *mut u8;
+            }?
+            .0 as *mut u8;
 
             unsafe { CloseHandle(file_mapping) };
 
