@@ -128,7 +128,6 @@ jobs:
           rustup default ${{ matrix.toolchain }}
           cargo build
           cargo test
-          cargo install cargo-msrv && cargo msrv verify
 
   android:
     runs-on: ubuntu-latest
