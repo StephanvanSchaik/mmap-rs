@@ -137,6 +137,58 @@ mod tests {
     }
 
     #[test]
+    fn map_existing() {
+        use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
+
+        const PRETEND_CODE: u8 = 0xC3; // ret in x86, but we're just pretending.
+
+        // Map a page.
+        let mut mapping = MmapOptions::new(MmapOptions::page_size())
+            .unwrap()
+            .map_mut()
+            .unwrap();
+
+        assert!(mapping.as_ptr() != std::ptr::null());
+
+        // Pretend we are a JIT and write some code. 
+        unsafe { *mapping.as_mut_ptr() = PRETEND_CODE }; 
+
+        // Verify the origiinal mapping exists as RW (non-execute)
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(region.share_mode, ShareMode::Private);
+        assert!(region.protection.contains(Protection::READ));
+        assert!(region.protection.contains(Protection::WRITE));
+        assert!(!region.protection.contains(Protection::EXECUTE));
+
+        // Re-acquire the mapping.
+        let remapped = unsafe {
+            MmapOptions::new(MmapOptions::page_size())
+                .unwrap()
+                .with_address(mapping.as_ptr() as usize)
+                .map_from_existing()
+                .unwrap()
+        };
+
+        // Verify our executable data from the old mapping is here.
+        unsafe { assert_eq!(PRETEND_CODE, *remapped.as_ptr()) };
+
+        // Then change mapping behaviour to executable.
+        let _unused = remapped.make_exec();
+
+        let region = MemoryAreas::query(mapping.as_ptr() as usize)
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(region.share_mode, ShareMode::Private);
+        assert!(region.protection.contains(Protection::READ));
+        assert!(!region.protection.contains(Protection::WRITE)); // now enabled
+        assert!(region.protection.contains(Protection::EXECUTE));
+    }
+
+    #[test]
     fn map_mut() {
         use crate::{MemoryAreas, MmapOptions, Protection, ShareMode};
 
