@@ -9,6 +9,14 @@ This crate can be used to create both file mappings and anonymous mappings.
 In addition, this crate supports the use of features such as huge pages, locking physical memory, etc. on platforms where those features are available.
 Furthermore, this crate allows you to enumerate the memory mappings of a process.
 
+## Changelog
+
+[View CHANGELOG](./CHANGELOG.md).
+
+## Rust version requirements (MSRV)
+
+mmap-rs supports **rustc version 1.67 or greater** since version 0.6.1.
+
 ## Supported Platforms
 
 Tier 1 (builds and tests are run in CI):
