@@ -78,14 +78,14 @@ where
         .map(|(r, w, x, s)| (r | w | x, s))
 }
 
-fn device_id<Input>() -> impl Parser<Input, Output = (u8, u8)>
+fn device_id<Input>() -> impl Parser<Input, Output = (u16, u8)>
 where
     Input: Stream<Token = char>,
     <Input::Error as ParseError<Input::Token, Input::Range, Input::Position>>::StreamError:
         From<::std::num::ParseIntError>,
 {
     (
-        hex_digit1().and_then(|s| u8::from_str_radix(s.as_str(), 16)),
+        hex_digit1().and_then(|s| u16::from_str_radix(s.as_str(), 16)),
         token(':'),
         hex_digit1().and_then(|s| u8::from_str_radix(s.as_str(), 16)),
     )
