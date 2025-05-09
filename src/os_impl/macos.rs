@@ -128,7 +128,7 @@ impl<B: BufRead> Iterator for MemoryAreas<B> {
                     Err(e) => return Some(Err(Error::Utf8(e))),
                 };
 
-                Some((Path::new(path).to_path_buf(), info.offset as u64))
+                Some((Path::new(path).to_path_buf(), info.offset))
             };
 
             let share_mode = match info.inheritance {
