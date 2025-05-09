@@ -17,10 +17,12 @@ use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
 use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcess, PROCESS_ALL_ACCESS};
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     struct SharedFlags: u32 {
         const FILE = 1 << 0;
     }
 
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     struct Flags: u32 {
         const COPY_ON_WRITE = 1 << 0;
         const JIT           = 1 << 1;

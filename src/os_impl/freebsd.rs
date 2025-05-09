@@ -11,14 +11,14 @@ use std::ops::Range;
 use std::path::Path;
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub struct KvmeProtection: libc::c_int {
         const READ    = 1 << 0;
         const WRITE   = 1 << 1;
         const EXECUTE = 1 << 2;
     }
-}
 
-bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub struct KvmeFlags: libc::c_int {
         const COW        = 1 << 0;
         const NEEDS_COPY = 1 << 1;

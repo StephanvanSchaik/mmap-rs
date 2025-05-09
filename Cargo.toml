@@ -14,14 +14,14 @@ rust-version = "1.67"
 tempfile = "3"
 
 [dependencies]
-bitflags = "1"
+bitflags = "2"
 combine = "4"
 libc = "0.2"
-thiserror = "1"
+thiserror = "2"
 
 [target.'cfg(unix)'.dependencies]
-nix = "0.26"
-sysctl = "0.5"
+nix = { version = "0.30", features = ["feature", "mman", "process"] }
+sysctl = "0.6"
 
 [target.'cfg(windows)'.dependencies]
 widestring = "1"

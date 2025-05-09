@@ -12,6 +12,7 @@ use crate::os_impl::windows as platform;
 
 bitflags! {
     /// The available flags to configure the allocated mapping.
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub struct MmapFlags: u32 {
         /// Maps the pages as shared such that any modifcations are visible between processes.
         ///
@@ -63,6 +64,7 @@ bitflags! {
 
     /// The available flags to configure the allocated mapping, but that are considered unsafe to
     /// use.
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub struct UnsafeMmapFlags: u32 {
         /// Maps the memory mapping at the address specified, replacing any pages that have been
         /// mapped at that address range.
@@ -94,6 +96,7 @@ bitflags! {
     }
 
     /// A set of (supported) page sizes.
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub struct PageSizes: usize {
         /// 4 KiB pages.
         const _4K   = 1 << 12;

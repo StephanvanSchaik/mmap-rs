@@ -20,6 +20,7 @@ use crate::os_impl::windows as platform;
 
 bitflags! {
     /// The protection of the memory area.
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub struct Protection: u32 {
         /// The memory area is mapped with read permissions.
         const READ          = 1 << 0;

@@ -42,14 +42,18 @@ pub enum Error {
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
 
+    /// Represents [`std::num::TryFromIntError`].
+    #[error(transparent)]
+    TryFromInt(#[from] std::num::TryFromIntError),
+
     /// Represents [`std::str::Utf8Error`].
     #[error(transparent)]
     Utf8(std::str::Utf8Error),
 
     #[cfg(unix)]
-    /// Represents [`nix::Error`].
+    /// Represents [`nix::Errno`].
     #[error(transparent)]
-    Nix(#[from] nix::Error),
+    Nix(#[from] nix::errno::Errno),
 
     #[cfg(unix)]
     /// Represents [`sysctl::SysctlError`].

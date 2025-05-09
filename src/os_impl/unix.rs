@@ -6,7 +6,7 @@ use nix::unistd::*;
 use std::fs::File;
 use std::num::NonZeroUsize;
 use std::ops::Range;
-use std::os::unix::io::AsRawFd;
+use std::ptr::NonNull;
 
 #[cfg(not(any(target_os = "android", target_os = "freebsd", target_os = "linux")))]
 use crate::PageSizes;
@@ -23,6 +23,7 @@ extern "C" {
 }
 
 bitflags! {
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     struct Flags: u32 {
         const JIT = 1 << 0;
     }
@@ -30,7 +31,7 @@ bitflags! {
 
 #[derive(Debug)]
 pub struct Mmap {
-    ptr: *mut u8,
+    ptr: NonNull<std::ffi::c_void>,
     size: usize,
     flags: Flags,
 }
@@ -41,12 +42,12 @@ unsafe impl Sync for Mmap {}
 impl Mmap {
     #[inline]
     pub fn as_ptr(&self) -> *const u8 {
-        self.ptr
+        self.ptr.as_ptr() as *const u8
     }
 
     #[inline]
     pub fn as_mut_ptr(&self) -> *mut u8 {
-        self.ptr
+        self.ptr.as_ptr() as *mut u8
     }
 
     #[inline]
@@ -56,7 +57,7 @@ impl Mmap {
 
     pub fn lock(&mut self) -> Result<(), Error> {
         unsafe {
-            mlock(self.ptr as *const std::ffi::c_void, self.size)?;
+            mlock(self.ptr, self.size)?;
         }
 
         Ok(())
@@ -64,7 +65,7 @@ impl Mmap {
 
     pub fn unlock(&mut self) -> Result<(), Error> {
         unsafe {
-            munlock(self.ptr as *const std::ffi::c_void, self.size)?;
+            munlock(self.ptr, self.size)?;
         }
 
         Ok(())
@@ -73,7 +74,7 @@ impl Mmap {
     pub fn flush(&self, range: Range<usize>) -> Result<(), Error> {
         unsafe {
             msync(
-                self.ptr.add(range.start) as *mut std::ffi::c_void,
+                self.ptr.add(range.start),
                 range.end - range.start,
                 MsFlags::MS_SYNC,
             )
@@ -85,7 +86,7 @@ impl Mmap {
     pub fn flush_async(&self, range: Range<usize>) -> Result<(), Error> {
         unsafe {
             msync(
-                self.ptr.add(range.start) as *mut std::ffi::c_void,
+                self.ptr.add(range.start),
                 range.end - range.start,
                 MsFlags::MS_ASYNC,
             )
@@ -96,7 +97,7 @@ impl Mmap {
 
     #[cfg(target_os = "ios")]
     pub fn flush_icache(&self) -> Result<(), Error> {
-        unsafe { sys_icache_invalidate(self.ptr as *mut std::ffi::c_void, self.size as usize) };
+        unsafe { sys_icache_invalidate(self.ptr.as_ptr(), self.size as usize) };
 
         Ok(())
     }
@@ -105,8 +106,8 @@ impl Mmap {
     pub fn flush_icache(&self) -> Result<(), Error> {
         unsafe {
             __clear_cache(
-                self.ptr as *mut std::ffi::c_void,
-                self.ptr.add(self.size) as *mut std::ffi::c_void,
+                self.ptr.as_ptr(),
+                self.ptr.add(self.size).as_ptr(),
             )
         };
 
@@ -114,11 +115,11 @@ impl Mmap {
     }
 
     fn do_make(&mut self, protect: ProtFlags) -> Result<(), Error> {
-        let ptr = self.ptr as *const u8;
+        let ptr = self.ptr;
         let size = self.size;
 
         unsafe {
-            mprotect(ptr as *mut std::ffi::c_void, size, protect)?;
+            mprotect(ptr, size, protect)?;
         }
 
         Ok(())
@@ -206,7 +207,7 @@ impl Mmap {
 
 impl Drop for Mmap {
     fn drop(&mut self) {
-        let _ = unsafe { munmap(self.ptr as *mut _, self.size) };
+        let _ = unsafe { munmap(self.ptr, self.size) };
     }
 }
 
@@ -371,15 +372,26 @@ impl<'a> MmapOptions<'a> {
 
     fn do_map(self, protect: ProtFlags) -> Result<Mmap, Error> {
         let size = self.size;
-        let ptr = unsafe {
-            mmap(
-                self.address.and_then(NonZeroUsize::new),
-                size,
-                protect,
-                self.flags(),
-                self.file.map(|(file, _)| file.as_raw_fd()).unwrap_or(-1),
-                self.file.map(|(_, offset)| offset as _).unwrap_or(0),
-            )
+        let ptr = if let Some((file, offset)) = self.file {
+            unsafe {
+                mmap(
+                    self.address.and_then(NonZeroUsize::new),
+                    size,
+                    protect,
+                    self.flags(),
+                    file,
+                    offset.try_into()?,
+                )
+            }
+        } else {
+            unsafe {
+                mmap_anonymous(
+                    self.address.and_then(NonZeroUsize::new),
+                    size,
+                    protect,
+                    self.flags(),
+                )
+            }
         }?;
 
         #[cfg(any(target_os = "android", target_os = "linux"))]
@@ -419,7 +431,7 @@ impl<'a> MmapOptions<'a> {
         }
 
         Ok(Mmap {
-            ptr: ptr as *mut u8,
+            ptr,
             size: size.get(),
             flags,
         })
