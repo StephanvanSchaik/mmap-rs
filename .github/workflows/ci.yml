@@ -16,7 +16,7 @@ jobs:
         os: [windows-2019, ubuntu-latest, macos-latest]
         toolchain:
           - stable
-          - 1.67
+          - 1.69
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -39,7 +39,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - 1.67
+          - 1.69
         target:
           - rust: 'aarch64-pc-windows-msvc'
           - rust: 'i686-pc-windows-msvc'
@@ -61,7 +61,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - 1.67
+          - 1.69
         target:
         - arch: 'aarch64'
           rust: 'aarch64-unknown-linux-gnu'
@@ -109,7 +109,7 @@ jobs:
         - release: '13.2'
         toolchain:
           - stable
-          - 1.67
+          - 1.69
 
     steps:
     - uses: actions/checkout@v4
@@ -135,7 +135,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - 1.67
+          - 1.69
         target:
         - rust: 'aarch64-linux-android'
         - rust: 'armv7-linux-androideabi'
@@ -160,7 +160,7 @@ jobs:
       matrix:
         toolchain:
           - stable
-          - 1.67
+          - 1.69
 
     steps:
     - uses: actions/checkout@v3
