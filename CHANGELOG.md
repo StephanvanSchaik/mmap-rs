@@ -2,6 +2,15 @@
 
 All notable changes to mmap-rs will be documented in this file.
 
+## 0.7.0
+
+- Updated the bitflags crate from version 1 to 2.
+- Updated the thiserror crate from version 1 to 2.
+- Updated the nix crate from version 0.26 to 0.30.
+- Updated the sysctl crate from version 0.5 to 0.6.
+- Bumped the MSRV (1.80).
+- Fixed the type for major device ID to use `u16`.
+
 ## 0.6.1
 
 - Implemented `TryFrom` for `Mmap` and `Reserved` objects for improved ergonomics.
