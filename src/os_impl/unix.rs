@@ -104,12 +104,7 @@ impl Mmap {
 
     #[cfg(not(target_os = "ios"))]
     pub fn flush_icache(&self) -> Result<(), Error> {
-        unsafe {
-            __clear_cache(
-                self.ptr.as_ptr(),
-                self.ptr.add(self.size).as_ptr(),
-            )
-        };
+        unsafe { __clear_cache(self.ptr.as_ptr(), self.ptr.add(self.size).as_ptr()) };
 
         Ok(())
     }
