@@ -155,7 +155,7 @@ jobs:
       run: cargo build --target ${{ matrix.target.rust }}
 
   aarch64-apple-ios:
-    runs-on: macos-12
+    runs-on: macos-latest
     strategy:
       matrix:
         toolchain:
