@@ -419,6 +419,16 @@ impl<'a> MmapOptions<'a> {
             unsafe { mlock(ptr, size.get()) }?;
         }
 
+        #[cfg(any(target_os = "android", target_os = "linux"))]
+        if self.flags.contains(MmapFlags::WILLNEED) {
+            unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_WILLNEED) }?;
+        }
+
+        #[cfg(any(target_os = "android", target_os = "linux"))]
+        if self.flags.contains(MmapFlags::DONTNEED) {
+            unsafe { madvise(ptr, size.get(), MmapAdvise::MADV_DONTNEED) }?;
+        }
+
         let mut flags = Flags::empty();
 
         if self.unsafe_flags.contains(UnsafeMmapFlags::JIT) {
