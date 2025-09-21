@@ -60,6 +60,16 @@ bitflags! {
         ///
         /// This flag acts as a no-op on platforms that do not support this feature.
         const RANDOM_ACCESS = 1 << 9;
+
+        /// Suggest that the mapped region will be accessed in the near future by calling `madvise()`.
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
+        const WILLNEED = 1 << 10;
+
+        /// Suggest that the mapped region will be not accessed in the near future by calling `madvise()`.
+        ///
+        /// This flag acts as a no-op on platforms that do not support this feature.
+        const DONTNEED = 1 << 11;
     }
 
     /// The available flags to configure the allocated mapping, but that are considered unsafe to
