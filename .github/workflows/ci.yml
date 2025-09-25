@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2019, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         toolchain:
           - stable
           - "1.85"
@@ -34,7 +34,7 @@ jobs:
       run: cargo test
 
   cross-windows:
-    runs-on: windows-2019
+    runs-on: windows-latest
     strategy:
       matrix:
         toolchain:
