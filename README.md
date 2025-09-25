@@ -15,7 +15,7 @@ Furthermore, this crate allows you to enumerate the memory mappings of a process
 
 ## Rust version requirements (MSRV)
 
-mmap-rs supports **rustc version 1.80 or greater** since version 0.7.
+mmap-rs supports **rustc version 1.85 or greater** since version 0.7.
 
 ## Supported Platforms
 
