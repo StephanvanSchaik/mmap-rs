@@ -1,14 +1,15 @@
+use crate::PageSizes;
 use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
 use crate::os_impl::unix::MmapOptions;
-use crate::PageSizes;
 use combine::{
+    EasyParser, Parser, Stream,
     error::ParseError,
     parser::{
         char::{digit, hex_digit, string},
         repeat::many1,
     },
-    token, EasyParser, Parser, Stream,
+    token,
 };
 use std::fs::File;
 use std::io::Lines;

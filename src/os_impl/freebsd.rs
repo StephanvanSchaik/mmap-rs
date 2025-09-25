@@ -1,7 +1,7 @@
+use crate::PageSizes;
 use crate::areas::{MemoryArea, Protection, ShareMode};
 use crate::error::Error;
 use crate::os_impl::unix::MmapOptions;
-use crate::PageSizes;
 use bitflags::bitflags;
 use libc::KVME_TYPE_VNODE;
 use std::fs::File;

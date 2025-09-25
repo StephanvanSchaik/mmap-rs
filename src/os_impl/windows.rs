@@ -7,7 +7,6 @@ use std::ops::Range;
 use std::os::windows::io::AsRawHandle;
 use std::path::PathBuf;
 use std::sync::Arc;
-use windows::core::PCWSTR;
 use windows::Win32::Foundation::{CloseHandle, HANDLE, MAX_PATH};
 #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
 use windows::Win32::System::Diagnostics::Debug::FlushInstructionCache;
@@ -15,6 +14,7 @@ use windows::Win32::System::Memory::*;
 use windows::Win32::System::ProcessStatus::GetMappedFileNameW;
 use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
 use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcess, PROCESS_ALL_ACCESS};
+use windows::core::PCWSTR;
 
 bitflags! {
     #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
