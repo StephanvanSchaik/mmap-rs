@@ -1,14 +1,14 @@
 [package]
 name = "mmap-rs"
 version = "0.6.1"
-edition = "2021"
+edition = "2024"
 authors = ["Stephan van Schaik <stephan@synkhronix.com>"]
 license = "Apache-2.0 OR MIT"
 description = "A cross-platform and safe Rust API to create and manage memory mappings in the virtual address space of the calling process."
 homepage = "https://codentium.com"
 repository = "https://github.com/StephanvanSchaik/mmap-rs"
 keywords = ["mmap", "memory", "mapping", "VirtualAlloc"]
-rust-version = "1.80"
+rust-version = "1.85"
 
 [dev-dependencies]
 tempfile = "3"

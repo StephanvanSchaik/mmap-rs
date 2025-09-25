@@ -12,12 +12,12 @@ use std::ptr::NonNull;
 use crate::PageSizes;
 
 #[cfg(target_os = "ios")]
-extern "C" {
+unsafe extern "C" {
     fn sys_icache_invalidate(start: *mut core::ffi::c_void, size: usize);
 }
 
 #[cfg(not(target_os = "ios"))]
-extern "C" {
+unsafe extern "C" {
     /// This function is provided by LLVM to clear the instruction cache for the specified range.
     fn __clear_cache(start: *mut core::ffi::c_void, end: *mut core::ffi::c_void);
 }
