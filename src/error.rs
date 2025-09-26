@@ -34,6 +34,10 @@ pub enum Error {
     #[error("the memory maps must share the same backing")]
     BackingMismatch,
 
+    /// The memory maps must be adjacent.
+    #[error("trying to create Mmap from existing address but the address was not specified in MmapOptions")]
+    MissingAddressForExistingMap,
+
     /// Represents [`std::io::Error`].
     #[error(transparent)]
     Io(#[from] std::io::Error),

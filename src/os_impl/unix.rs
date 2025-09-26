@@ -485,4 +485,23 @@ impl<'a> MmapOptions<'a> {
 
         self.do_map(ProtFlags::PROT_READ | ProtFlags::PROT_WRITE | ProtFlags::PROT_EXEC)
     }
+
+    pub unsafe fn map_from_existing(self) -> Result<Mmap, Error> {
+
+        let addr = self.address;
+        if addr.is_none() {
+            return Err(Error::MissingAddressForExistingMap);
+        }
+
+        let mut flags = Flags::empty();
+        if self.unsafe_flags.contains(UnsafeMmapFlags::JIT) {
+            flags |= Flags::JIT;
+        }
+
+        Ok(Mmap {
+            ptr: addr.unwrap_unchecked() as *mut u8,
+            size: self.size.into(),
+            flags,
+        })
+    }
 }
